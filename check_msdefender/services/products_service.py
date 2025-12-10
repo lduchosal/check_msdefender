@@ -101,7 +101,8 @@ class ProductsService:
         low_count = 0
 
         for vulnerability in products:
-            severity = vulnerability.get("vulnerabilitySeverityLevel", "Unknown").lower()
+            severityLevel = vulnerability.get("vulnerabilitySeverityLevel", "Unknown")
+            severity = (severityLevel or "Unknown").lower()
             if severity == "critical":
                 critical_count += 1
             elif severity == "high":
@@ -133,15 +134,16 @@ class ProductsService:
                 cve_list = ", ".join(unique_cves[:5])  # Show first 5 CVEs
                 severities = ""
                 # Count severities
-                severity_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
+                severity_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Unknown": 0}
                 for sev in software["severities"]:
+                    sev = (sev or "Unknown")
                     severity_counts[sev] += 1
                 severities = ", ".join(
                     f"{key}: {value}" for key, value in severity_counts.items() if value > 0
                 )
 
                 for cve in software["cves"]:
-                    severity = cve["severity"].lower()
+                    severity = (cve["severity"] or "Unknown").lower()
                     if severity == "critical":
                         score += 100
                     elif severity == "high":

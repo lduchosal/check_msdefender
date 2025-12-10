@@ -1,4 +1,5 @@
 """Nagios plugin implementation."""
+import traceback
 
 import nagiosplugin
 from typing import List, Optional, Union, Any
@@ -137,7 +138,7 @@ class NagiosPlugin:
                 return int(e.code) if e.code is not None else 0
 
         except Exception as e:
-            print(f"UNKNOWN: {str(e)}")
+            print(f"UNKNOWN: {str(e)}\n{traceback.format_exc()}")
             return 3
 
 
