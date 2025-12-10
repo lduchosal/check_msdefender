@@ -12,7 +12,8 @@
       "Bash(echo \"Exit code: $?\")",
       "Bash(mypy:*)",
       "Bash(black:*)",
-      "Bash(pdm run:*)"
+      "Bash(pdm run:*)",
+      "Bash(pdm lock:*)"
     ],
     "deny": [],
     "ask": []
