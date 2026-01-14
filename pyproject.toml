@@ -54,6 +54,7 @@ Documentation = "https://github.com/lduchosal/check_msdefender/blob/main/README.
 
 [project.scripts]
 check_msdefender = "check_msdefender.cli:main"
+check_msdefender_integration = "check_msdefender.integration:main"
 
 [tool.setuptools.package-data]
 "*" = ["*.ini"]

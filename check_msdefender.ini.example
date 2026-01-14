@@ -16,3 +16,7 @@ api_version = v1.0
 
 # Optional: Timeout in seconds (default: 30)
 timeout = 30
+
+[integration]
+# Machine DNS name for integration tests
+machine = your-machine.example.com

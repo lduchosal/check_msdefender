@@ -15,7 +15,9 @@
       "Bash(pdm run:*)",
       "Bash(pdm lock:*)",
       "Bash(.venv/bin/check_msdefender:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(.venv/bin/check_msdefender_integration:*)"
     ],
     "deny": [],
     "ask": []

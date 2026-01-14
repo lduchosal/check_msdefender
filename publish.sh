@@ -52,34 +52,37 @@ echo "╚═╝      ╚═════╝ ╚═════╝ ╚════
 echo "${NC}"
 echo "${BOLD}Starting Package Publishing Process...${NC}"
 
-print_step "1/10 Cleaning Previous Build"
+print_step "1/11 Cleaning Previous Build"
 run_command "pdm run clean" "Clean"
 
-print_step "2/10 Installing Dependencies"
+print_step "2/11 Installing Dependencies"
 run_command "pdm run install" "Dependencies installation"
 
-print_step "3/10 Installing Development Dependencies"
+print_step "3/11 Installing Development Dependencies"
 run_command "pdm run install-dev" "Development dependencies installation"
 
-print_step "4/10 Check Outdated Dependencies"
+print_step "4/11 Check Outdated Dependencies"
 run_command "pdm outdated" "Outdated dependencies"
 
-print_step "5/10 Update Dependencies"
+print_step "5/11 Update Dependencies"
 run_command "pdm update" "dependencies update"
 
-print_step "6/10 Type Checking"
+print_step "6/11 Type Checking"
 run_command "pdm run typecheck" "Type checking"
 
-print_step "7/10 Running Tests"
+print_step "7/11 Running Tests"
 run_command "pdm run test-quick" "Tests"
 
-print_step "8/10 Bumping Version"
+print_step "8/11 Running Integration Tests"
+run_command "check_msdefender_integration" "Integration tests"
+
+print_step "9/11 Bumping Version"
 run_command "pdm run bump-version" "Version bump"
 
-print_step "9/10 Building Package"
+print_step "10/11 Building Package"
 run_command "pdm build" "Package build"
 
-print_step "10/10 Publishing Package"
+print_step "11/11 Publishing Package"
 run_command "pdm publish" "Package publishing"
 
 echo ""
