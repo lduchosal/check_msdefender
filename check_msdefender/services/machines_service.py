@@ -40,13 +40,13 @@ class MachinesService:
 
         # Liat machines
         # Define the sort order
-        status_priority = {"Onboarded": 1, "InsufficientInfo": 2, "Unsupported": 3}
+        status_priority = {"Onboarded": 1, "InsufficientInfo": 2, "Unsupported": 3, "CanBeOnboarded": 4}
 
-        # Sort by priority
+        # Sort by priority (unknown statuses get priority 99)
         sorted_machines = sorted(
             machines,
             key=lambda x: (
-                status_priority[x["onboardingStatus"] or ""],
+                status_priority.get(x["onboardingStatus"] or "", 99),
                 x["computerDnsName"] or "",
             ),
         )

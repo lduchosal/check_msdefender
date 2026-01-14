@@ -54,7 +54,7 @@ class ProductsService:
         products_data = self.defender.get_products()
         all_products = products_data.get("value", [])
         products = [
-            product for product in all_products if product.get("deviceId") == target_machine_id
+            product for product in all_products if product.get("machineId") == target_machine_id
         ]
 
         self.logger.info(f"Found {len(products)} vulnerabilities for machine {target_dns_name}")
@@ -62,14 +62,14 @@ class ProductsService:
         # Group vulnerabilities by software
         software_vulnerabilities = {}
         for vulnerability in products:
-            software_name = vulnerability.get("softwareName", "Unknown")
-            software_version = vulnerability.get("softwareVersion", "Unknown")
-            software_vendor = vulnerability.get("softwareVendor", "Unknown")
+            software_name = vulnerability.get("productName", "Unknown")
+            software_version = vulnerability.get("productVersion", "Unknown")
+            software_vendor = vulnerability.get("productVendor", "Unknown")
             cve_id = vulnerability.get("cveId", "Unknown")
             cvss_score = vulnerability.get("cvssScore", 0)
             disk_paths = vulnerability.get("diskPaths", [])
             registry_paths = vulnerability.get("registryPaths", [])
-            severity = vulnerability.get("vulnerabilitySeverityLevel", "Unknown")
+            severity = vulnerability.get("severity", "Unknown")
 
             software_key = f"{software_name}-{software_version}-{software_vendor}"
 
@@ -101,7 +101,7 @@ class ProductsService:
         low_count = 0
 
         for vulnerability in products:
-            severityLevel = vulnerability.get("vulnerabilitySeverityLevel", "Unknown")
+            severityLevel = vulnerability.get("severity", "Unknown")
             severity = (severityLevel or "Unknown").lower()
             if severity == "critical":
                 critical_count += 1

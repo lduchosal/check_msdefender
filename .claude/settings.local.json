@@ -13,7 +13,9 @@
       "Bash(mypy:*)",
       "Bash(black:*)",
       "Bash(pdm run:*)",
-      "Bash(pdm lock:*)"
+      "Bash(pdm lock:*)",
+      "Bash(.venv/bin/check_msdefender:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
