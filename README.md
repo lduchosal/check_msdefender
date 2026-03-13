@@ -418,3 +418,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 [🐛 Report Bug](https://github.com/lduchosal/check_msdefender/issues) • [💡 Request Feature](https://github.com/lduchosal/check_msdefender/issues) • [📖 Documentation](https://github.com/lduchosal/check_msdefender/blob/main/README.md)
 
 </div>
+
+## 💖 Sponsor
+
+If this project helps you, consider supporting its development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/lduchosal)
