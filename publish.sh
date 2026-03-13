@@ -168,7 +168,7 @@ if [ "$QUALITY_ONLY" = true ]; then
 fi
 
 print_step "Running Integration Tests"
-run_command "check_msdefender_integration" "Integration tests"
+run_command "pdm run check_msdefender_integration" "Integration tests"
 
 print_step "Bumping Version (pdm bump ${BUMP_TYPE})"
 run_command "pdm bump -v ${BUMP_TYPE}" "Version bump"
