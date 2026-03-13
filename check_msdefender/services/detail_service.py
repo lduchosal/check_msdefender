@@ -1,7 +1,8 @@
 """Detail service implementation."""
 
 import json
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
+
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
 
@@ -17,7 +18,8 @@ class DetailService:
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Get machine details result with value and details.
+        """
+        Get machine details result with value and details.
 
         Returns:
             dict: Result with value (1 or 0) and details list
@@ -52,13 +54,17 @@ class DetailService:
             self._machine_details = machine_details
 
             # Create detailed output
-            details = []
-            details.append(f"Machine ID: {machine_details.get('id', 'Unknown')}")
-            details.append(f"Computer Name: {machine_details.get('computerDnsName', 'Unknown')}")
-            details.append(f"OS Platform: {machine_details.get('osPlatform', 'Unknown')}")
-            details.append(f"OS Version: {machine_details.get('osVersion', 'Unknown')}")
-            details.append(f"Health Status: {machine_details.get('healthStatus', 'Unknown')}")
-            details.append(f"Risk Score: {machine_details.get('riskScore', 'Unknown')}")
+            details: list[str] = []
+            details.extend(
+                (
+                    f"Machine ID: {machine_details.get('id', 'Unknown')}",
+                    f"Computer Name: {machine_details.get('computerDnsName', 'Unknown')}",
+                    f"OS Platform: {machine_details.get('osPlatform', 'Unknown')}",
+                    f"OS Version: {machine_details.get('osVersion', 'Unknown')}",
+                    f"Health Status: {machine_details.get('healthStatus', 'Unknown')}",
+                    f"Risk Score: {machine_details.get('riskScore', 'Unknown')}",
+                )
+            )
 
             result = {"value": 1, "details": details}
 
@@ -67,7 +73,7 @@ class DetailService:
             return result
 
         except Exception as e:
-            self.logger.debug(f"Failed to get machine details: {str(e)}")
+            self.logger.debug(f"Failed to get machine details: {e}")
             raise
 
     def get_machine_details_json(self) -> Optional[str]:

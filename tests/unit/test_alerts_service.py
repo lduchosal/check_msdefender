@@ -1,10 +1,11 @@
 """Unit tests for AlertsService."""
 
-import pytest
 from unittest.mock import Mock
 
-from check_msdefender.services.alerts_service import AlertsService
+import pytest
+
 from check_msdefender.core.exceptions import ValidationError
+from check_msdefender.services.alerts_service import AlertsService
 
 
 class TestAlertsService:

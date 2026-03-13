@@ -2,8 +2,8 @@
 
 import pytest
 
-from check_msdefender.services.alerts_service import AlertsService
 from check_msdefender.core.exceptions import ValidationError
+from check_msdefender.services.alerts_service import AlertsService
 from tests.fixtures.mock_defender_client import MockDefenderClient
 
 

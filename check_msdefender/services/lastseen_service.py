@@ -2,7 +2,8 @@
 
 import re
 from datetime import datetime
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
+
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
 
@@ -62,9 +63,11 @@ class LastSeenService:
 
             result = {"value": days_diff, "details": details}
 
-            self.logger.info(f"Machine last seen {days_diff} days ago ({last_seen_str})")
+            self.logger.info(
+                f"Machine last seen {days_diff} days ago ({last_seen_str})"
+            )
             self.logger.method_exit("get_result", result)
             return result
         except (ValueError, TypeError) as e:
-            self.logger.debug(f"Failed to parse timestamp: {str(e)}")
-            raise ValidationError(f"Invalid lastSeen timestamp: {str(e)}")
+            self.logger.debug(f"Failed to parse timestamp: {e}")
+            raise ValidationError(f"Invalid lastSeen timestamp: {e}")

@@ -1,8 +1,9 @@
 """Nagios plugin implementation."""
+
 import traceback
+from typing import Any, List, Optional, Union
 
 import nagiosplugin
-from typing import List, Optional, Union, Any
 
 
 class DefenderScalarContext(nagiosplugin.ScalarContext):
@@ -123,7 +124,9 @@ class NagiosPlugin:
 
             # Create Nagios check with custom summary
             # Use 'found' as context name for detail command, otherwise use command name
-            context_name = "found" if self.command_name == "detail" else self.command_name
+            context_name = (
+                "found" if self.command_name == "detail" else self.command_name
+            )
             check = nagiosplugin.Check(
                 DefenderResource(self.command_name, value),
                 DefenderScalarContext(context_name, warning, critical),
@@ -138,7 +141,7 @@ class NagiosPlugin:
                 return int(e.code) if e.code is not None else 0
 
         except Exception as e:
-            print(f"UNKNOWN: {str(e)}\n{traceback.format_exc()}")
+            print(f"UNKNOWN: {e}\n{traceback.format_exc()}")
             return 3
 
 

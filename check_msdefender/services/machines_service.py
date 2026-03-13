@@ -1,6 +1,6 @@
 """Machines service implementation."""
 
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from check_msdefender.core.logging_config import get_verbose_logger
 
@@ -40,7 +40,12 @@ class MachinesService:
 
         # Liat machines
         # Define the sort order
-        status_priority = {"Onboarded": 1, "InsufficientInfo": 2, "Unsupported": 3, "CanBeOnboarded": 4}
+        status_priority = {
+            "Onboarded": 1,
+            "InsufficientInfo": 2,
+            "Unsupported": 3,
+            "CanBeOnboarded": 4,
+        }
 
         # Sort by priority (unknown statuses get priority 99)
         sorted_machines = sorted(

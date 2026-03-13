@@ -94,9 +94,9 @@ class TestLastSeenServiceFixtures:
             def get_machine_by_id(self, machine_id):
                 return {"id": machine_id, "lastSeen": "2025-09-12T13:14:52.3321473Z"}
 
-        service = LastSeenService(MockClientHighPrecision())
-
         # Test that it works with the current implementation (might truncate microseconds)
-        result = service.get_result(machine_id="test-machine")
+        result = LastSeenService(MockClientHighPrecision()).get_result(
+            machine_id="test-machine"
+        )
         # Should return a reasonable value (depends on current time)
         assert isinstance(result["value"], int)

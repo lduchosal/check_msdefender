@@ -2,14 +2,15 @@
 
 import logging
 import sys
-from typing import Optional, Any
+from typing import Any, Optional
 
 
 class VerboseLogger:
     """Logger configured for different verbosity levels."""
 
     def __init__(self, name: str, verbose_level: int = 0):
-        """Initialize logger with verbosity level.
+        """
+        Initialize logger with verbosity level.
 
         Args:
             name: Logger name
@@ -82,7 +83,9 @@ class VerboseLogger:
         """Log API call details if verbose >= 2."""
         if self.verbose_level >= 2:
             if status_code and response_time:
-                self.logger.debug(f"API {method} {url} -> {status_code} ({response_time:.3f}s)")
+                self.logger.debug(
+                    f"API {method} {url} -> {status_code} ({response_time:.3f}s)"
+                )
             else:
                 self.logger.debug(f"API {method} {url}")
 
@@ -105,7 +108,8 @@ class VerboseLogger:
 
 
 def get_verbose_logger(name: str, verbose_level: int = 0) -> VerboseLogger:
-    """Get a configured verbose logger.
+    """
+    Get a configured verbose logger.
 
     Args:
         name: Logger name (typically __name__)

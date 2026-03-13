@@ -1,9 +1,10 @@
 """Onboarding status service implementation."""
 
-from typing import Dict, Optional, Any
-from check_msdefender.services.models import OnboardingStatus
+from typing import Any, Dict, Optional
+
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
+from check_msdefender.services.models import OnboardingStatus
 
 
 class OnboardingService:
@@ -54,6 +55,8 @@ class OnboardingService:
 
         result = {"value": result_value, "details": details}
 
-        self.logger.info(f"Machine onboarding status: {onboarding_state} -> {result_value}")
+        self.logger.info(
+            f"Machine onboarding status: {onboarding_state} -> {result_value}"
+        )
         self.logger.method_exit("get_result", result)
         return result

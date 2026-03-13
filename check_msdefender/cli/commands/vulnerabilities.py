@@ -1,13 +1,14 @@
 """Vulnerability commands for CLI."""
 
 import sys
-from typing import Optional, Any
+from typing import Any, Optional
 
 from check_msdefender.core.auth import get_authenticator
 from check_msdefender.core.config import load_config
 from check_msdefender.core.defender import DefenderClient
 from check_msdefender.core.nagios import NagiosPlugin
 from check_msdefender.services.vulnerabilities_service import VulnerabilitiesService
+
 from ..decorators import common_options
 
 
@@ -53,8 +54,8 @@ def register_vulnerability_commands(main_group: Any) -> None:
                 verbose=verbose,
             )
 
-            sys.exit(result or 0)
+            sys.exit(result)
 
         except Exception as e:
-            print(f"UNKNOWN: {str(e)}")
+            print(f"UNKNOWN: {e}")
             sys.exit(3)

@@ -1,7 +1,8 @@
 """Integration tests for CLI interface end-to-end without external dependencies."""
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 from click.testing import CliRunner
 
 from check_msdefender.cli import main

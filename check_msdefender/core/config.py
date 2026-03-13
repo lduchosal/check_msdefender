@@ -1,7 +1,6 @@
 """Configuration management."""
 
 import configparser
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +12,7 @@ def load_config(config_path: str = "check_msdefender.ini") -> configparser.Confi
     # Try to find config file
     config_file = _find_config_file(config_path)
 
-    if not config_file or not os.path.exists(config_file):
+    if not config_file or not Path(config_file).exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     config.read(config_file)
@@ -23,7 +22,7 @@ def load_config(config_path: str = "check_msdefender.ini") -> configparser.Confi
 def _find_config_file(config_path: str) -> Optional[str]:
     """Find configuration file in current directory or Nagios base directory."""
     # If absolute path provided, use it
-    if os.path.isabs(config_path):
+    if Path(config_path).is_absolute():
         return config_path
 
     # Try current directory

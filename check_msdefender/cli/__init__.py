@@ -1,6 +1,7 @@
 """CLI module for check_msdefender."""
 
 import click
+
 from .commands import register_all_commands
 
 

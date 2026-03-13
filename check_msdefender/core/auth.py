@@ -2,7 +2,9 @@
 
 import configparser
 from typing import Union
-from azure.identity import ClientSecretCredential, CertificateCredential
+
+from azure.identity import CertificateCredential, ClientSecretCredential
+
 from check_msdefender.core.exceptions import ConfigurationError
 
 
@@ -20,7 +22,9 @@ def get_authenticator(
     tenant_id = auth_section.get("tenant_id")
 
     if not client_id or not tenant_id:
-        raise ConfigurationError("client_id and tenant_id are required in [auth] section")
+        raise ConfigurationError(
+            "client_id and tenant_id are required in [auth] section"
+        )
 
     # Check for client secret authentication
     client_secret = auth_section.get("client_secret")

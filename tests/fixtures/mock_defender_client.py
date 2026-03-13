@@ -14,15 +14,15 @@ class MockDefenderClient:
         fixtures_dir = Path(__file__).parent
 
         # Load machine data
-        with open(fixtures_dir / "machine_data.json") as f:
+        with (fixtures_dir / "machine_data.json").open() as f:
             self.machine_data = json.load(f)
 
         # Load vulnerability data
-        with open(fixtures_dir / "vulnerability_data.json") as f:
+        with (fixtures_dir / "vulnerability_data.json").open() as f:
             self.vulnerability_data = json.load(f)
 
         # Load alerts data
-        with open(fixtures_dir / "alerts_data.json") as f:
+        with (fixtures_dir / "alerts_data.json").open() as f:
             self.alerts_data = json.load(f)
 
     def get_machine_by_id(self, machine_id):

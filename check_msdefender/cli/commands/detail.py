@@ -1,14 +1,14 @@
 """Detail machine commands for CLI."""
 
 import sys
-import click
-from typing import Optional, Any
+from typing import Any, Optional
 
 from check_msdefender.core.auth import get_authenticator
 from check_msdefender.core.config import load_config
 from check_msdefender.core.defender import DefenderClient
-from check_msdefender.services.detail_service import DetailService
 from check_msdefender.core.nagios import NagiosPlugin
+from check_msdefender.services.detail_service import DetailService
+
 from ..decorators import common_options
 
 
@@ -63,5 +63,5 @@ def register_detail_commands(main_group: Any) -> None:
             sys.exit(result)
 
         except Exception as e:
-            print(f"DEFENDER UNKNOWN - {str(e)}")
+            print(f"DEFENDER UNKNOWN - {e}")
             sys.exit(3)

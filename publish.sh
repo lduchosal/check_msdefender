@@ -56,9 +56,9 @@ done
 
 # Set total steps based on mode
 if [ "$QUALITY_ONLY" = true ]; then
-    STEPS=13
+    STEPS=14
 else
-    STEPS=20
+    STEPS=21
 fi
 STEP=0
 

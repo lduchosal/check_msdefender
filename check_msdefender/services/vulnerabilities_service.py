@@ -1,9 +1,10 @@
 """Vulnerabilities service implementation."""
 
-from typing import Dict, List, Optional, Any
-from check_msdefender.services.models import VulnerabilityScore, Vulnerability
+from typing import Any, Dict, List, Optional
+
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
+from check_msdefender.services.models import Vulnerability, VulnerabilityScore
 
 
 class VulnerabilitiesService:
@@ -35,13 +36,16 @@ class VulnerabilitiesService:
 
         # Get vulnerabilities for the machine
         self.logger.info(f"Fetching vulnerabilities for machine: {machine_id}")
-        vulnerabilities_data = self.client.get_machine_vulnerabilities(machine_id)
-        raw_vulnerabilities = vulnerabilities_data.get("value", [])
+        raw_vulnerabilities = self.client.get_machine_vulnerabilities(machine_id).get(
+            "value", []
+        )
         self.logger.info(f"Found {len(raw_vulnerabilities)} raw vulnerabilities")
 
         # Process and deduplicate vulnerabilities
         vulnerabilities = self._process_vulnerabilities(raw_vulnerabilities)
-        self.logger.info(f"Found {len(vulnerabilities)} unique vulnerabilities after deduplication")
+        self.logger.info(
+            f"Found {len(vulnerabilities)} unique vulnerabilities after deduplication"
+        )
 
         # Calculate vulnerability score
         score = VulnerabilityScore()
@@ -54,7 +58,9 @@ class VulnerabilitiesService:
 
         for vuln in sorted_vulnerabilities:
             severity = vuln.severity.lower()
-            self.logger.debug(f"Processing vulnerability {vuln.id} with severity: {severity}")
+            self.logger.debug(
+                f"Processing vulnerability {vuln.id} with severity: {severity}"
+            )
 
             if severity == "critical":
                 score.critical += 1
@@ -117,8 +123,9 @@ class VulnerabilitiesService:
 
         # Get vulnerabilities for the machine
         self.logger.info(f"Fetching vulnerabilities for machine: {machine_id}")
-        vulnerabilities_data = self.client.get_machine_vulnerabilities(machine_id)
-        raw_vulnerabilities = vulnerabilities_data.get("value", [])
+        raw_vulnerabilities = self.client.get_machine_vulnerabilities(machine_id).get(
+            "value", []
+        )
 
         # Process and deduplicate vulnerabilities
         vulnerabilities = self._process_vulnerabilities(raw_vulnerabilities)
@@ -126,7 +133,9 @@ class VulnerabilitiesService:
         # Sort by severity
         sorted_vulnerabilities = self._sort_by_severity(vulnerabilities)
 
-        self.logger.method_exit("get_detailed_vulnerabilities", len(sorted_vulnerabilities))
+        self.logger.method_exit(
+            "get_detailed_vulnerabilities", len(sorted_vulnerabilities)
+        )
         return sorted_vulnerabilities
 
     def _process_vulnerabilities(
@@ -157,7 +166,9 @@ class VulnerabilitiesService:
 
         return unique_vulnerabilities
 
-    def _sort_by_severity(self, vulnerabilities: List[Vulnerability]) -> List[Vulnerability]:
+    def _sort_by_severity(
+        self, vulnerabilities: List[Vulnerability]
+    ) -> List[Vulnerability]:
         """Sort vulnerabilities by severity (Critical > High > Medium > Low)."""
         return sorted(
             vulnerabilities,

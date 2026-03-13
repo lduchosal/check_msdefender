@@ -1,6 +1,6 @@
 """Alerts service implementation."""
 
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
@@ -42,8 +42,7 @@ class AlertsService:
 
         # Get all alerts
         self.logger.info("Fetching alerts from Microsoft Defender")
-        alerts_data = self.defender.get_alerts()
-        all_alerts = alerts_data.get("value", [])
+        all_alerts = self.defender.get_alerts().get("value", [])
 
         # Filter alerts for the specific machine
         machine_alerts = [
@@ -53,17 +52,23 @@ class AlertsService:
             or alert.get("computerDnsName") == target_dns_name
         ]
 
-        self.logger.info(f"Found {len(machine_alerts)} alerts for machine {target_dns_name}")
+        self.logger.info(
+            f"Found {len(machine_alerts)} alerts for machine {target_dns_name}"
+        )
 
         # Categorize alerts by status and severity
-        unresolved_alerts = [alert for alert in machine_alerts if alert.get("status") != "Resolved"]
+        unresolved_alerts = [
+            alert for alert in machine_alerts if alert.get("status") != "Resolved"
+        ]
         informational_alerts = [
-            alert for alert in unresolved_alerts if alert.get("severity") == "Informational"
+            alert
+            for alert in unresolved_alerts
+            if alert.get("severity") == "Informational"
         ]
         critical_warning_alerts = [
             alert
             for alert in unresolved_alerts
-            if alert.get("severity") in ["High", "Medium", "Low"]
+            if alert.get("severity") in ("High", "Medium", "Low")
         ]
 
         # Create details for output
@@ -82,7 +87,9 @@ class AlertsService:
                 title = alert.get("title", "Unknown alert")
                 status = alert.get("status", "Unknown")
                 severity = alert.get("severity", "Unknown")
-                details.append(f"{creation_time} - {title} ({status} {severity.lower()})")
+                details.append(
+                    f"{creation_time} - {title} ({status} {severity.lower()})"
+                )
 
         # Return the number of unresolved alerts as the value
         # This will be used by Nagios plugin for determining status based on thresholds
@@ -93,6 +100,8 @@ class AlertsService:
             "details": details,
         }
 
-        self.logger.info(f"Alert analysis complete: {len(unresolved_alerts)} unresolved alerts")
+        self.logger.info(
+            f"Alert analysis complete: {len(unresolved_alerts)} unresolved alerts"
+        )
         self.logger.method_exit("get_result", result)
         return result

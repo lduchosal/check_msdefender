@@ -2,8 +2,8 @@
 
 import pytest
 
-from check_msdefender.services.vulnerabilities_service import VulnerabilitiesService
 from check_msdefender.core.exceptions import ValidationError
+from check_msdefender.services.vulnerabilities_service import VulnerabilitiesService
 from tests.fixtures.mock_defender_client import MockDefenderClient
 
 
@@ -81,8 +81,9 @@ class TestVulnerabilitiesServiceFixtures:
                     ]
                 }
 
-        service = VulnerabilitiesService(MockClientSpecificVulns())
-        result = service.get_result(machine_id="test-machine")
+        result = VulnerabilitiesService(MockClientSpecificVulns()).get_result(
+            machine_id="test-machine"
+        )
         # 2 critical (200) + 3 high (30) + 1 medium (5) + 4 low (4) = 239
         assert result["value"] == 239
 
@@ -103,8 +104,9 @@ class TestVulnerabilitiesServiceFixtures:
                     ]
                 }
 
-        service = VulnerabilitiesService(MockClientUnknownSeverity())
-        result = service.get_result(machine_id="test-machine")
+        result = VulnerabilitiesService(MockClientUnknownSeverity()).get_result(
+            machine_id="test-machine"
+        )
         # Unknown severities should not contribute to score
         assert result["value"] == 0
 
@@ -126,7 +128,8 @@ class TestVulnerabilitiesServiceFixtures:
                     ]
                 }
 
-        service = VulnerabilitiesService(MockClientMixedCase())
-        result = service.get_result(machine_id="test-machine")
+        result = VulnerabilitiesService(MockClientMixedCase()).get_result(
+            machine_id="test-machine"
+        )
         # 1 critical (100) + 1 high (10) + 1 medium (5) + 1 low (1) = 116
         assert result["value"] == 116

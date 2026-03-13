@@ -1,8 +1,10 @@
 """Microsoft Defender API client."""
 
 import time
-import requests
 from typing import Any, Dict, cast
+
+import requests
+
 from check_msdefender.core.exceptions import DefenderAPIError
 from check_msdefender.core.logging_config import get_verbose_logger
 
@@ -29,7 +31,8 @@ class DefenderClient:
         region: str = "api",
         verbose_level: int = 0,
     ) -> None:
-        """Initialize with authenticator and optional region.
+        """
+        Initialize with authenticator and optional region.
 
         Args:
             authenticator: Authentication provider
@@ -70,7 +73,9 @@ class DefenderClient:
         try:
             start_time = time.time()
             self.logger.info(f"Querying machine by DNS name: {dns_name}")
-            response = requests.get(url, headers=headers, params=params, timeout=self.timeout)
+            response = requests.get(
+                url, headers=headers, params=params, timeout=self.timeout
+            )
             elapsed = time.time() - start_time
 
             self.logger.api_call("GET", url, response.status_code, elapsed)
@@ -81,10 +86,10 @@ class DefenderClient:
             self.logger.method_exit("get_machine_by_dns_name", result)
             return result
         except requests.RequestException as e:
-            self.logger.debug(f"API request failed: {str(e)}")
+            self.logger.debug(f"API request failed: {e}")
             if hasattr(e, "response") and e.response is not None:
-                self.logger.debug(f"Response: {str(e.response.content)}")
-            raise DefenderAPIError(f"Failed to query MS Defender API: {str(e)}")
+                self.logger.debug(f"Response: {e.response.content!r}")
+            raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_machine_by_id(self, machine_id: str) -> Dict[str, Any]:
         """Get machine information by machine ID."""
@@ -112,10 +117,10 @@ class DefenderClient:
             self.logger.method_exit("get_machine_by_id", result)
             return result
         except requests.RequestException as e:
-            self.logger.debug(f"API request failed: {str(e)}")
+            self.logger.debug(f"API request failed: {e}")
             if hasattr(e, "response") and e.response is not None:
-                self.logger.debug(f"Response: {str(e.response.content)}")
-            raise DefenderAPIError(f"Failed to query MS Defender API: {str(e)}")
+                self.logger.debug(f"Response: {e.response.content!r}")
+            raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_machine_vulnerabilities(self, machine_id: str) -> Dict[str, Any]:
         """Get vulnerabilities for a machine."""
@@ -143,10 +148,10 @@ class DefenderClient:
             self.logger.method_exit("get_machine_vulnerabilities", result)
             return result
         except requests.RequestException as e:
-            self.logger.debug(f"API request failed: {str(e)}")
+            self.logger.debug(f"API request failed: {e}")
             if hasattr(e, "response") and e.response is not None:
-                self.logger.debug(f"Response: {str(e.response.content)}")
-            raise DefenderAPIError(f"Failed to query MS Defender API: {str(e)}")
+                self.logger.debug(f"Response: {e.response.content!r}")
+            raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def list_machines(self) -> Dict[str, Any]:
         """Get list of all machines."""
@@ -165,7 +170,9 @@ class DefenderClient:
         try:
             start_time = time.time()
             self.logger.info("Querying all machines")
-            response = requests.get(url, headers=headers, params=params, timeout=self.timeout)
+            response = requests.get(
+                url, headers=headers, params=params, timeout=self.timeout
+            )
             elapsed = time.time() - start_time
 
             self.logger.api_call("GET", url, response.status_code, elapsed)
@@ -176,10 +183,10 @@ class DefenderClient:
             self.logger.method_exit("list_machines", result)
             return result
         except requests.RequestException as e:
-            self.logger.debug(f"API request failed: {str(e)}")
+            self.logger.debug(f"API request failed: {e}")
             if hasattr(e, "response") and e.response is not None:
-                self.logger.debug(f"Response: {str(e.response.content)}")
-            raise DefenderAPIError(f"Failed to query MS Defender API: {str(e)}")
+                self.logger.debug(f"Response: {e.response.content!r}")
+            raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_alerts(self) -> Dict[str, Any]:
         """Get alerts from Microsoft Defender."""
@@ -203,7 +210,9 @@ class DefenderClient:
         try:
             start_time = time.time()
             self.logger.info("Querying alerts")
-            response = requests.get(url, headers=headers, params=params, timeout=self.timeout)
+            response = requests.get(
+                url, headers=headers, params=params, timeout=self.timeout
+            )
             elapsed = time.time() - start_time
 
             self.logger.api_call("GET", url, response.status_code, elapsed)
@@ -214,10 +223,10 @@ class DefenderClient:
             self.logger.method_exit("get_alerts", result)
             return result
         except requests.RequestException as e:
-            self.logger.debug(f"API request failed: {str(e)}")
+            self.logger.debug(f"API request failed: {e}")
             if hasattr(e, "response") and e.response is not None:
-                self.logger.debug(f"Response: {str(e.response.content)}")
-            raise DefenderAPIError(f"Failed to query MS Defender API: {str(e)}")
+                self.logger.debug(f"Response: {e.response.content!r}")
+            raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_products(self) -> Dict[str, Any]:
         """Get installed products for a machine."""
@@ -237,7 +246,9 @@ class DefenderClient:
         try:
             start_time = time.time()
             self.logger.info("Querying products")
-            response = requests.get(url, headers=headers, params=params, timeout=self.timeout)
+            response = requests.get(
+                url, headers=headers, params=params, timeout=self.timeout
+            )
             elapsed = time.time() - start_time
 
             self.logger.api_call("GET", url, response.status_code, elapsed)
@@ -248,10 +259,10 @@ class DefenderClient:
             self.logger.method_exit("get_products", result)
             return result
         except requests.RequestException as e:
-            self.logger.debug(f"API request failed: {str(e)}")
+            self.logger.debug(f"API request failed: {e}")
             if hasattr(e, "response") and e.response is not None:
-                self.logger.debug(f"Response: {str(e.response.content)}")
-            raise DefenderAPIError(f"Failed to query MS Defender API: {str(e)}")
+                self.logger.debug(f"Response: {e.response.content!r}")
+            raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def _get_token(self) -> str:
         """Get access token from authenticator."""

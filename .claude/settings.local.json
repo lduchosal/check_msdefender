@@ -21,7 +21,11 @@
       "Bash(./publish.sh:*)",
       "Bash(sh:*)",
       "Bash(pdm add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(pdm install:*)",
+      "Bash(echo $?)"
     ],
     "deny": [],
     "ask": []

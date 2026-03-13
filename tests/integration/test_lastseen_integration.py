@@ -1,11 +1,12 @@
 """Integration tests for lastseen command."""
 
-import pytest
 from unittest.mock import Mock, patch
+
+import click
+import pytest
 from click.testing import CliRunner
 
 from check_msdefender.cli.commands.lastseen import register_lastseen_commands
-import click
 
 
 @pytest.fixture

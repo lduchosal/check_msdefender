@@ -2,9 +2,9 @@
 
 import pytest
 
-from check_msdefender.services.onboarding_service import OnboardingService
-from check_msdefender.services.models import OnboardingStatus
 from check_msdefender.core.exceptions import ValidationError
+from check_msdefender.services.models import OnboardingStatus
+from check_msdefender.services.onboarding_service import OnboardingService
 from tests.fixtures.mock_defender_client import MockDefenderClient
 
 
@@ -66,8 +66,9 @@ class TestOnboardingServiceFixtures:
             def get_machine_by_id(self, machine_id):
                 return {"id": machine_id, "onboardingStatus": "SomeUnknownStatus"}
 
-        service = OnboardingService(MockClientUnknownStatus())
-        result = service.get_result(machine_id="test-machine")
+        result = OnboardingService(MockClientUnknownStatus()).get_result(
+            machine_id="test-machine"
+        )
         assert result["value"] == OnboardingStatus.UNKNOWN.value
 
     def test_get_result_missing_onboarding_status(self):
@@ -78,6 +79,7 @@ class TestOnboardingServiceFixtures:
             def get_machine_by_id(self, machine_id):
                 return {"id": machine_id}
 
-        service = OnboardingService(MockClientMissingStatus())
-        result = service.get_result(machine_id="test-machine")
+        result = OnboardingService(MockClientMissingStatus()).get_result(
+            machine_id="test-machine"
+        )
         assert result["value"] == OnboardingStatus.UNKNOWN.value

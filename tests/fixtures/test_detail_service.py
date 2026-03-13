@@ -1,10 +1,11 @@
 """Fixture tests for DetailService."""
 
-import pytest
 import json
 
-from check_msdefender.services.detail_service import DetailService
+import pytest
+
 from check_msdefender.core.exceptions import ValidationError
+from check_msdefender.services.detail_service import DetailService
 from tests.fixtures.mock_defender_client import MockDefenderClient
 
 

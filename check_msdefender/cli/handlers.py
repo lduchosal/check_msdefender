@@ -9,19 +9,19 @@ class ClickErrorHandler:
     @staticmethod
     def handle_config_error(error: Exception) -> int:
         """Handle configuration-related errors."""
-        click.echo(f"UNKNOWN: Configuration error - {str(error)}", err=True)
+        click.echo(f"UNKNOWN: Configuration error - {error}", err=True)
         return 3
 
     @staticmethod
     def handle_auth_error(error: Exception) -> int:
         """Handle authentication-related errors."""
-        click.echo(f"UNKNOWN: Authentication error - {str(error)}", err=True)
+        click.echo(f"UNKNOWN: Authentication error - {error}", err=True)
         return 3
 
     @staticmethod
     def handle_api_error(error: Exception) -> int:
         """Handle API-related errors."""
-        click.echo(f"UNKNOWN: API error - {str(error)}", err=True)
+        click.echo(f"UNKNOWN: API error - {error}", err=True)
         return 3
 
 
