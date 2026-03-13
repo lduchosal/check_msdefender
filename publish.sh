@@ -8,11 +8,66 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
+# Parse command line arguments
+QUALITY_ONLY=false
+BUMP_TYPE="patch"
+CI_MODE=false
+for arg in "$@"; do
+    case $arg in
+        --quality)
+            QUALITY_ONLY=true
+            shift
+            ;;
+        --ci)
+            CI_MODE=true
+            shift
+            ;;
+        --major)
+            BUMP_TYPE="major"
+            shift
+            ;;
+        --minor)
+            BUMP_TYPE="minor"
+            shift
+            ;;
+        --patch)
+            BUMP_TYPE="patch"
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--quality] [--ci] [--major|--minor|--patch] [--help]"
+            echo ""
+            echo "Options:"
+            echo "  --quality       Run only quality checks without publishing"
+            echo "  --ci            Use CI-compatible test suite (excludes reverseproxy tests)"
+            echo "  --major         Bump major version (x.0.0)"
+            echo "  --minor         Bump minor version (0.x.0)"
+            echo "  --patch         Bump patch version (0.0.x) [default]"
+            echo "  --help          Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $arg"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Set total steps based on mode
+if [ "$QUALITY_ONLY" = true ]; then
+    STEPS=13
+else
+    STEPS=20
+fi
+STEP=0
+
 # Function to print step headers
 print_step() {
+    STEP=$((STEP + 1))
     echo ""
     echo "${BLUE}${BOLD}═══════════════════════════════════════════════════════════════${NC}"
-    echo "${BLUE}${BOLD}  $1${NC}"
+    echo "${BLUE}${BOLD}  $STEP/$STEPS $1${NC}"
     echo "${BLUE}${BOLD}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
 }
@@ -35,7 +90,7 @@ run_command() {
 
     echo "${YELLOW}→ Running: ${cmd}${NC}"
 
-    if $cmd; then
+    if eval "$cmd"; then
         print_success "$description completed successfully"
     else
         print_error "$description failed"
@@ -50,43 +105,99 @@ echo "██╔═══╝ ██║   ██║██╔══██╗██�
 echo "██║     ╚██████╔╝██████╔╝███████╗██║███████║██║  ██║"
 echo "╚═╝      ╚═════╝ ╚═════╝ ╚══════╝╚═╝╚══════╝╚═╝  ╚═╝"
 echo "${NC}"
-echo "${BOLD}Starting Package Publishing Process...${NC}"
+if [ "$QUALITY_ONLY" = true ]; then
+    echo "${BOLD}Starting check_msdefender Package Quality Checks...${NC}"
+else
+    echo "${BOLD}Starting check_msdefender Package Publishing Process...${NC}"
+fi
 
-print_step "1/11 Cleaning Previous Build"
+print_step "Cleaning Previous Build (pdm run clean)"
 run_command "pdm run clean" "Clean"
 
-print_step "2/11 Installing Dependencies"
+print_step "Installing Dependencies (pdm install)"
 run_command "pdm run install" "Dependencies installation"
 
-print_step "3/11 Installing Development Dependencies"
+print_step "Installing Development Dependencies (pdm install-dev)"
 run_command "pdm run install-dev" "Development dependencies installation"
 
-print_step "4/11 Check Outdated Dependencies"
-run_command "pdm outdated" "Outdated dependencies"
+print_step "Checking for Outdated Dependencies (pdm outdated)"
+run_command "pdm outdated" "Outdated Dependencies"
 
-print_step "5/11 Update Dependencies"
-run_command "pdm update" "dependencies update"
+print_step "Updating Dependencies (pdm update)"
+run_command "pdm update" "Dependencies update"
 
-print_step "6/11 Type Checking"
+print_step "Sorting Imports (ruff isort)"
+run_command "pdm run isort" "Import sorting"
+
+print_step "Code Formatting (ruff format)"
+run_command "pdm run format" "Code formatting"
+
+print_step "Docstring Formatting (docformatter)"
+run_command "pdm run docformatter" "Docstring formatting"
+
+print_step "Type Checking (typecheck)"
 run_command "pdm run typecheck" "Type checking"
 
-print_step "7/11 Running Tests"
-run_command "pdm run test-quick" "Tests"
+print_step "Docstring Coverage (interrogate)"
+run_command "pdm run interrogate" "Docstring coverage"
 
-print_step "8/11 Running Integration Tests"
+print_step "Code Quality Check (refurb)"
+run_command "pdm run refurb" "Code quality check"
+
+print_step "Linting (ruff)"
+run_command "pdm run lint" "Linting"
+
+print_step "Dead Code Check (vulture)"
+run_command "pdm run vulture" "Dead code check"
+
+print_step "Running Tests (pytest)"
+if [ "$CI_MODE" = true ]; then
+    run_command "pdm run test-ci" "Tests (CI)"
+else
+    run_command "pdm run test-quick" "Tests"
+fi
+
+# Exit here if --quality flag is set
+if [ "$QUALITY_ONLY" = true ]; then
+    echo ""
+    echo "${GREEN}${BOLD}🎉 QUALITY CHECKS COMPLETED SUCCESSFULLY! 🎉${NC}"
+    echo "${GREEN}${BOLD}═══════════════════════════════════════════════════════════════${NC}"
+    echo "${GREEN}All quality checks have passed. Your code is ready for publishing!${NC}"
+    echo ""
+    exit 0
+fi
+
+print_step "Running Integration Tests"
 run_command "check_msdefender_integration" "Integration tests"
 
-print_step "9/11 Bumping Version"
-run_command "pdm run bump-version" "Version bump"
+print_step "Bumping Version (pdm bump ${BUMP_TYPE})"
+run_command "pdm bump -v ${BUMP_TYPE}" "Version bump"
 
-print_step "10/11 Building Package"
+# Extract version after bump
+VERSION=$(python -c "import check_msdefender; print(check_msdefender.__version__)")
+echo "${BLUE}New version: ${VERSION}${NC}"
+
+print_step "Building Package (pdm)"
 run_command "pdm build" "Package build"
 
-print_step "11/11 Publishing Package"
+print_step "Publishing Package (pdm publish)"
 run_command "pdm publish" "Package publishing"
+
+print_step "Adding All Files to Git"
+run_command "git add ." "Adding all files to git"
+
+print_step "Committing, Tagging and Pushing"
+COMMIT_MSG="chore: release version ${VERSION}"
+run_command "git commit -m \"${COMMIT_MSG}\"" "Git commit"
+run_command "git tag check-msdefender-${VERSION}" "Creating git tag"
+run_command "git push" "Pushing commits"
+run_command "git push --tags" "Pushing tags"
+
+print_step "Cleaning Previous Build (pdm run clean)"
+run_command "pdm run clean" "Clean"
 
 echo ""
 echo "${GREEN}${BOLD}🎉 PUBLISHING COMPLETED SUCCESSFULLY! 🎉${NC}"
 echo "${GREEN}${BOLD}═══════════════════════════════════════════════════════════════${NC}"
-echo "${GREEN}Your XP package has been successfully published!${NC}"
+echo "${GREEN}Your check_msdefender package has been successfully published and tagged!${NC}"
 echo ""

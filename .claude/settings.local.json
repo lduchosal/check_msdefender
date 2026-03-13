@@ -17,7 +17,11 @@
       "Bash(.venv/bin/check_msdefender:*)",
       "WebSearch",
       "Bash(.venv/bin/pip install:*)",
-      "Bash(.venv/bin/check_msdefender_integration:*)"
+      "Bash(.venv/bin/check_msdefender_integration:*)",
+      "Bash(./publish.sh:*)",
+      "Bash(sh:*)",
+      "Bash(pdm add:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

@@ -225,14 +225,14 @@ class DefenderClient:
 
         token = self._get_token()
 
-        # Use the TVM API endpoint for vulnerabilities by machine
-        url = f"{self.base_url}/api/vulnerabilities/machinesVulnerabilities"
+        # Use the TVM API endpoint for products
+        url = f"{self.base_url}/api/machines/SoftwareVulnerabilitiesByMachine"
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": DefenderClient.application_json,
         }
 
-        params = {"$top": "10000"}
+        params = {"pageIndex": "1", "pageSize": "50000"}
 
         try:
             start_time = time.time()
