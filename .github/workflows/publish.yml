@@ -37,6 +37,27 @@ jobs:
         python -m pip install --upgrade pip pdm
         pdm self add pdm-bump
 
+    - name: Create config file
+      env:
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        INTEGRATION_MACHINE: ${{ secrets.INTEGRATION_MACHINE }}
+      run: |
+        cat > check_msdefender.ini << EOF
+        [auth]
+        client_id = ${AZURE_CLIENT_ID}
+        tenant_id = ${AZURE_TENANT_ID}
+        client_secret = ${AZURE_CLIENT_SECRET}
+
+        [settings]
+        api_version = v1.0
+        timeout = 10
+
+        [integration]
+        machine = ${INTEGRATION_MACHINE}
+        EOF
+
     - name: Configure git
       run: |
         git config user.name "github-actions[bot]"
