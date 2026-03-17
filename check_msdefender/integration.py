@@ -52,21 +52,26 @@ def main() -> int:
         ["check_msdefender", "vulnerabilities", "-d", machine],
     ]
 
+    # Nagios exit codes: 0=OK, 1=WARNING, 2=CRITICAL, 3=UNKNOWN
+    # Only code 3 (UNKNOWN) means the plugin itself failed
+    nagios_unknown = 3
+
     failures = 0
     for cmd in all_commands:
         cmd_str = " ".join(cmd)
 
         if quiet:
             result = subprocess.run(cmd, capture_output=True, text=True)
-            status = "OK" if result.returncode == 0 else "FAIL"
-            if result.returncode != 0:
+            is_failure = result.returncode >= nagios_unknown
+            status = "FAIL" if is_failure else "OK"
+            if is_failure:
                 failures += 1
             print(f"  [{status:4}] {cmd_str}")
         else:
             print(f"\n>>> {cmd_str}")
             print("-" * 60)
             result = subprocess.run(cmd, capture_output=False)
-            if result.returncode != 0:
+            if result.returncode >= nagios_unknown:
                 failures += 1
 
     return 1 if failures > 0 else 0
