@@ -1,12 +1,19 @@
 """Microsoft Defender API client."""
 
 import time
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import requests
 
 from check_msdefender.core.exceptions import DefenderAPIError
 from check_msdefender.core.logging_config import get_verbose_logger
+from check_msdefender.services.models import (
+    AlertListResponse,
+    MachineDict,
+    MachineListResponse,
+    ProductListResponse,
+    VulnerabilityListResponse,
+)
 
 PARAM_TOP = "$top"
 
@@ -56,7 +63,7 @@ class DefenderClient:
         }
         return endpoints.get(region, endpoints["eu"])
 
-    def get_machine_by_dns_name(self, dns_name: str) -> Dict[str, Any]:
+    def get_machine_by_dns_name(self, dns_name: str) -> MachineListResponse:
         """Get machine information by DNS name."""
         self.logger.method_entry("get_machine_by_dns_name", dns_name=dns_name)
 
@@ -81,7 +88,7 @@ class DefenderClient:
             self.logger.api_call("GET", url, response.status_code, elapsed)
             response.raise_for_status()
 
-            result = cast(Dict[str, Any], response.json())
+            result = cast(MachineListResponse, response.json())
             self.logger.json_response(str(result))
             self.logger.method_exit("get_machine_by_dns_name", result)
             return result
@@ -91,7 +98,7 @@ class DefenderClient:
                 self.logger.debug(f"Response: {e.response.content!r}")
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
-    def get_machine_by_id(self, machine_id: str) -> Dict[str, Any]:
+    def get_machine_by_id(self, machine_id: str) -> MachineDict:
         """Get machine information by machine ID."""
         self.logger.method_entry("get_machine_by_id", machine_id=machine_id)
 
@@ -112,7 +119,7 @@ class DefenderClient:
             self.logger.api_call("GET", url, response.status_code, elapsed)
             response.raise_for_status()
 
-            result = cast(Dict[str, Any], response.json())
+            result = cast(MachineDict, response.json())
             self.logger.json_response(str(result))
             self.logger.method_exit("get_machine_by_id", result)
             return result
@@ -122,7 +129,7 @@ class DefenderClient:
                 self.logger.debug(f"Response: {e.response.content!r}")
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
-    def get_machine_vulnerabilities(self, machine_id: str) -> Dict[str, Any]:
+    def get_machine_vulnerabilities(self, machine_id: str) -> VulnerabilityListResponse:
         """Get vulnerabilities for a machine."""
         self.logger.method_entry("get_machine_vulnerabilities", machine_id=machine_id)
 
@@ -143,7 +150,7 @@ class DefenderClient:
             self.logger.api_call("GET", url, response.status_code, elapsed)
             response.raise_for_status()
 
-            result = cast(Dict[str, Any], response.json())
+            result = cast(VulnerabilityListResponse, response.json())
             self.logger.json_response(str(result))
             self.logger.method_exit("get_machine_vulnerabilities", result)
             return result
@@ -153,7 +160,7 @@ class DefenderClient:
                 self.logger.debug(f"Response: {e.response.content!r}")
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
-    def list_machines(self) -> Dict[str, Any]:
+    def list_machines(self) -> MachineListResponse:
         """Get list of all machines."""
         self.logger.method_entry("list_machines")
 
@@ -178,7 +185,7 @@ class DefenderClient:
             self.logger.api_call("GET", url, response.status_code, elapsed)
             response.raise_for_status()
 
-            result = cast(Dict[str, Any], response.json())
+            result = cast(MachineListResponse, response.json())
             self.logger.json_response(str(result))
             self.logger.method_exit("list_machines", result)
             return result
@@ -188,7 +195,7 @@ class DefenderClient:
                 self.logger.debug(f"Response: {e.response.content!r}")
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
-    def get_alerts(self) -> Dict[str, Any]:
+    def get_alerts(self) -> AlertListResponse:
         """Get alerts from Microsoft Defender."""
         self.logger.method_entry("get_alerts")
 
@@ -218,7 +225,7 @@ class DefenderClient:
             self.logger.api_call("GET", url, response.status_code, elapsed)
             response.raise_for_status()
 
-            result = cast(Dict[str, Any], response.json())
+            result = cast(AlertListResponse, response.json())
             self.logger.json_response(str(result))
             self.logger.method_exit("get_alerts", result)
             return result
@@ -228,7 +235,7 @@ class DefenderClient:
                 self.logger.debug(f"Response: {e.response.content!r}")
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
-    def get_products(self) -> Dict[str, Any]:
+    def get_products(self) -> ProductListResponse:
         """Get installed products for a machine."""
         self.logger.method_entry("get_products")
 
@@ -254,7 +261,7 @@ class DefenderClient:
             self.logger.api_call("GET", url, response.status_code, elapsed)
             response.raise_for_status()
 
-            result = cast(Dict[str, Any], response.json())
+            result = cast(ProductListResponse, response.json())
             self.logger.json_response(str(result))
             self.logger.method_exit("get_products", result)
             return result

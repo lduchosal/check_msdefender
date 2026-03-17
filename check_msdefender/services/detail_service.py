@@ -1,23 +1,33 @@
 """Detail service implementation."""
 
+from __future__ import annotations
+
 import json
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
+from check_msdefender.services.models import (
+    DefenderClientProtocol,
+    MachineDict,
+    ServiceResult,
+)
 
 
 class DetailService:
     """Service for getting machine details."""
 
-    def __init__(self, defender_client: Any, verbose_level: int = 0) -> None:
+    def __init__(
+        self, defender_client: DefenderClientProtocol, verbose_level: int = 0
+    ) -> None:
         """Initialize with Defender client."""
         self.defender = defender_client
         self.logger = get_verbose_logger(__name__, verbose_level)
+        self._machine_details: Optional[MachineDict] = None
 
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> ServiceResult:
         """
         Get machine details result with value and details.
 
@@ -36,7 +46,7 @@ class DetailService:
                 machines_data = self.defender.get_machine_by_dns_name(dns_name)
                 if not machines_data.get("value"):
                     self.logger.info(f"Machine not found with DNS name: {dns_name}")
-                    result = {
+                    result: ServiceResult = {
                         "value": 0,
                         "details": [f"Machine not found with DNS name: {dns_name}"],
                     }
@@ -48,6 +58,7 @@ class DetailService:
 
             # Get detailed machine information by ID
             self.logger.info(f"Fetching detailed machine data by ID: {machine_id}")
+            assert machine_id is not None
             machine_details = self.defender.get_machine_by_id(machine_id)
 
             # Store the details for output formatting
@@ -66,11 +77,11 @@ class DetailService:
                 )
             )
 
-            result = {"value": 1, "details": details}
+            result2: ServiceResult = {"value": 1, "details": details}
 
             self.logger.info("Machine details retrieved successfully")
-            self.logger.method_exit("get_result", result)
-            return result
+            self.logger.method_exit("get_result", result2)
+            return result2
 
         except Exception as e:
             self.logger.debug(f"Failed to get machine details: {e}")
@@ -78,6 +89,6 @@ class DetailService:
 
     def get_machine_details_json(self) -> Optional[str]:
         """Get the machine details as formatted JSON string."""
-        if not hasattr(self, "_machine_details"):
+        if self._machine_details is None:
             return None
         return json.dumps(self._machine_details, indent=2)

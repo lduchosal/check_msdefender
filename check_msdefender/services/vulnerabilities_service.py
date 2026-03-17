@@ -1,24 +1,39 @@
 """Vulnerabilities service implementation."""
 
-from typing import Any, Dict, List, Optional
+from __future__ import annotations
+
+from typing import Optional
 
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
-from check_msdefender.services.models import Vulnerability, VulnerabilityScore
+from check_msdefender.services.models import (
+    DefenderClientProtocol,
+    ServiceResult,
+    Vulnerability,
+    VulnerabilityDict,
+    VulnerabilityScore,
+)
 
 
 class VulnerabilitiesService:
     """Service for checking vulnerabilities."""
 
-    def __init__(self, defender_client: Any, verbose_level: int = 0) -> None:
+    def __init__(
+        self, defender_client: DefenderClientProtocol, verbose_level: int = 0
+    ) -> None:
         """Initialize with Defender client."""
         self.client = defender_client
         self.logger = get_verbose_logger(__name__, verbose_level)
-        self._severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+        self._severity_order: dict[str, int] = {
+            "critical": 0,
+            "high": 1,
+            "medium": 2,
+            "low": 3,
+        }
 
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> ServiceResult:
         """Get vulnerability result with value and details for a machine."""
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
@@ -31,10 +46,11 @@ class VulnerabilitiesService:
             machines_data = self.client.get_machine_by_dns_name(dns_name)
             if not machines_data.get("value"):
                 raise ValidationError(f"Machine not found with DNS name: {dns_name}")
-            machine_id = machines_data["value"][0]["id"]
+            machine_id = machines_data["value"][0].get("id", "")
             self.logger.debug(f"Resolved machine ID: {machine_id}")
 
         # Get vulnerabilities for the machine
+        assert machine_id is not None
         self.logger.info(f"Fetching vulnerabilities for machine: {machine_id}")
         raw_vulnerabilities = self.client.get_machine_vulnerabilities(machine_id).get(
             "value", []
@@ -51,7 +67,7 @@ class VulnerabilitiesService:
         score = VulnerabilityScore()
 
         # Create detailed output
-        details = []
+        details: list[str] = []
 
         # Sort vulnerabilities by severity for consistent output
         sorted_vulnerabilities = self._sort_by_severity(vulnerabilities)
@@ -85,7 +101,7 @@ class VulnerabilitiesService:
             f"Vulnerabilities: {len(raw_vulnerabilities)}, score: {score.total_score}",
         )
 
-        result = {"value": score.total_score, "details": details}
+        result: ServiceResult = {"value": score.total_score, "details": details}
 
         self.logger.method_exit("get_result", result)
         return result
@@ -93,6 +109,7 @@ class VulnerabilitiesService:
     def clean_and_truncate(
         self, text: Optional[str], prefix: str = "Summary: ", word_count: int = 10
     ) -> str:
+        """Clean and truncate text to a given word count."""
         # Handle None text
         if text is None:
             return ""
@@ -103,7 +120,7 @@ class VulnerabilitiesService:
 
     def get_detailed_vulnerabilities(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
-    ) -> List[Vulnerability]:
+    ) -> list[Vulnerability]:
         """Get detailed vulnerability information for a machine."""
         self.logger.method_entry(
             "get_detailed_vulnerabilities", machine_id=machine_id, dns_name=dns_name
@@ -118,10 +135,11 @@ class VulnerabilitiesService:
             machines_data = self.client.get_machine_by_dns_name(dns_name)
             if not machines_data.get("value"):
                 raise ValidationError(f"Machine not found with DNS name: {dns_name}")
-            machine_id = machines_data["value"][0]["id"]
+            machine_id = machines_data["value"][0].get("id", "")
             self.logger.debug(f"Resolved machine ID: {machine_id}")
 
         # Get vulnerabilities for the machine
+        assert machine_id is not None
         self.logger.info(f"Fetching vulnerabilities for machine: {machine_id}")
         raw_vulnerabilities = self.client.get_machine_vulnerabilities(machine_id).get(
             "value", []
@@ -139,11 +157,11 @@ class VulnerabilitiesService:
         return sorted_vulnerabilities
 
     def _process_vulnerabilities(
-        self, raw_vulnerabilities: List[Dict[str, Any]]
-    ) -> List[Vulnerability]:
+        self, raw_vulnerabilities: list[VulnerabilityDict]
+    ) -> list[Vulnerability]:
         """Process and deduplicate vulnerabilities."""
-        seen_cves = set()
-        unique_vulnerabilities = []
+        seen_cves: set[str] = set()
+        unique_vulnerabilities: list[Vulnerability] = []
 
         for vuln_data in raw_vulnerabilities:
             vuln_id = vuln_data.get("id", "")
@@ -167,8 +185,8 @@ class VulnerabilitiesService:
         return unique_vulnerabilities
 
     def _sort_by_severity(
-        self, vulnerabilities: List[Vulnerability]
-    ) -> List[Vulnerability]:
+        self, vulnerabilities: list[Vulnerability]
+    ) -> list[Vulnerability]:
         """Sort vulnerabilities by severity (Critical > High > Medium > Low)."""
         return sorted(
             vulnerabilities,

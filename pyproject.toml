@@ -45,25 +45,11 @@ check_msdefender_integration = "check_msdefender.integration:main"
 [tool.setuptools.package-data]
 "*" = ["*.ini"]
 
-[tool.black]
-line-length = 100
-target-version = ['py310']
-
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = false
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-ignore_missing_imports = true
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+reportMissingImports = true
+reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -108,7 +94,7 @@ distribution = true
 version = {source = "file", path = "check_msdefender/__init__.py"}
 [tool.pdm.scripts]
 format = "ruff format"
-typecheck = "mypy check_msdefender/"
+typecheck = "pyright check_msdefender/"
 build = "python -m build"
 publish = "python -m twine upload dist/* --verbose"
 install = "pdm install"
@@ -118,16 +104,16 @@ climachines = "check_msdefender machines"
 cli = {composite = ["clihelp", "climachines"]}
 all = {composite = ["install", "format", "build", "test", "cli"]}
 
-test = "env PYTHONPATH=src python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing"
-test-quick = "env PYTHONPATH=src python -m pytest tests/ --tb=no -q"
-test-ci = "env PYTHONPATH=src python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing -m 'not reverseproxy'"
-test-unit = "env PYTHONPATH=src python -m pytest tests/unit/ -v"
-test-integration = "env PYTHONPATH=src python -m pytest tests/integration/ -v"
-test-cov = "env PYTHONPATH=src python -m pytest tests/ -v --cov=check_msdefender --cov-report=html --cov-report=term-missing"
+test = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing"
+test-quick = "python -m pytest tests/ --tb=no -q"
+test-ci = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing -m 'not reverseproxy'"
+test-unit = "python -m pytest tests/unit/ -v"
+test-integration = "python -m pytest tests/integration/ -v"
+test-cov = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=html --cov-report=term-missing"
 lint = "ruff check check_msdefender/ tests/"
 lint-fix = "ruff check --fix check_msdefender/ tests/"
 isort = "ruff check --select I --fix check_msdefender/ tests/"
-format-check = "black --check check_msdefender/ tests/"
+format-check = "ruff format --check check_msdefender/ tests/"
 docformatter = "docformatter check_msdefender/ tests/"
 interrogate = "interrogate -vv check_msdefender/"
 vulture = "vulture check_msdefender/ tests/"
@@ -147,14 +133,11 @@ dev = [
     "pytest>=6.0",
     "pytest-cov>=2.0",
     "pytest-asyncio>=1.0",
-    "black>=21.0",
-    "flake8>=3.8",
-    "mypy>=0.800",
     "twine>=6.2.0",
     "pdm>=2.0.0",
     "ruff>=0.13.0",
+    "pyright>=1.1",
     "pdm-bump",
-    "types-requests>=2.32.4.20260107",
     "vulture>=2.0",
     "refurb>=2.0",
     "interrogate>=1.5",

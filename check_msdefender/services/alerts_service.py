@@ -1,22 +1,30 @@
 """Alerts service implementation."""
 
-from typing import Any, Dict, Optional
+from __future__ import annotations
+
+from typing import Optional
 
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
+from check_msdefender.services.models import (
+    DefenderClientProtocol,
+    ServiceResult,
+)
 
 
 class AlertsService:
     """Service for checking machine alerts."""
 
-    def __init__(self, defender_client: Any, verbose_level: int = 0) -> None:
+    def __init__(
+        self, defender_client: DefenderClientProtocol, verbose_level: int = 0
+    ) -> None:
         """Initialize with Defender client."""
         self.defender = defender_client
         self.logger = get_verbose_logger(__name__, verbose_level)
 
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> ServiceResult:
         """Get alerts result with value and details for a machine."""
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
@@ -72,7 +80,7 @@ class AlertsService:
         ]
 
         # Create details for output
-        details = []
+        details: list[str] = []
         if unresolved_alerts:
             summary_line = f"Unresolved alerts for {target_dns_name}"
             if informational_alerts and not critical_warning_alerts:
@@ -95,7 +103,7 @@ class AlertsService:
         # This will be used by Nagios plugin for determining status based on thresholds
         value = len(unresolved_alerts)
 
-        result = {
+        result: ServiceResult = {
             "value": value,
             "details": details,
         }

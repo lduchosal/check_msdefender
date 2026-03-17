@@ -1,5 +1,7 @@
 """Vulnerability commands for CLI."""
 
+# pyright: reportUnusedFunction=false
+
 import sys
 from typing import Any, Optional
 

@@ -25,7 +25,13 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(pdm install:*)",
-      "Bash(echo $?)"
+      "Bash(echo $?)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:pyrefly.org)"
     ],
     "deny": [],
     "ask": []

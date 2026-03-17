@@ -56,7 +56,7 @@ def main() -> int:
     ]
 
     all_commands = commands_no_machine + commands_with_machine
-    results = []
+    results: list[tuple[str, int]] = []
 
     for cmd in all_commands:
         cmd_str = " ".join(cmd)
