@@ -1,5 +1,6 @@
 """Integration test runner for check_msdefender commands."""
 
+import argparse
 import configparser
 import subprocess
 import sys
@@ -22,6 +23,15 @@ def find_config() -> Path:
 
 def main() -> int:
     """Run all check_msdefender commands."""
+    parser = argparse.ArgumentParser(description="Run check_msdefender integration tests")
+    parser.add_argument(
+        "-q", "--quiet", action="store_true", help="Quiet mode: show only summary with OK/FAIL"
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Verbose mode: show full command output"
+    )
+    args = parser.parse_args()
+
     try:
         config_path = find_config()
     except FileNotFoundError as e:
@@ -36,9 +46,10 @@ def main() -> int:
         print("Error: No machine configured in [integration] section")
         return 1
 
-    print(f"Running integration tests with machine: {machine}")
-    print(f"Config: {config_path}")
-    print("=" * 60)
+    if not args.quiet:
+        print(f"Running integration tests with machine: {machine}")
+        print(f"Config: {config_path}")
+        print("=" * 60)
 
     # Commands that don't need -d flag
     commands_no_machine = [
@@ -56,25 +67,43 @@ def main() -> int:
     ]
 
     all_commands = commands_no_machine + commands_with_machine
-    results: list[tuple[str, int]] = []
+    results: list[tuple[str, int, str]] = []
 
     for cmd in all_commands:
         cmd_str = " ".join(cmd)
-        print(f"\n>>> {cmd_str}")
-        print("-" * 60)
 
-        result = subprocess.run(cmd, capture_output=False)
-        results.append((cmd_str, result.returncode))
+        if args.verbose:
+            print(f"\n>>> {cmd_str}")
+            print("-" * 60)
+            result = subprocess.run(cmd, capture_output=False)
+            results.append((cmd_str, result.returncode, ""))
+        else:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            first_line = result.stdout.strip().split("\n")[0] if result.stdout.strip() else ""
+            results.append((cmd_str, result.returncode, first_line))
 
-    print("\n" + "=" * 60)
-    print("Summary:")
-    print("=" * 60)
+    if not args.quiet:
+        print("\n" + "=" * 60)
+        print("Summary:")
+        print("=" * 60)
 
-    for cmd_str, returncode in results:
-        status = "OK" if returncode == 0 else f"EXIT {returncode}"
-        print(f"  [{status:8}] {cmd_str}")
+    failures = 0
+    for cmd_str, returncode, output in results:
+        if returncode == 0:
+            status = "OK"
+        else:
+            status = "FAIL"
+            failures += 1
 
-    return 0
+        if args.quiet:
+            print(f"  [{status:4}] {cmd_str}")
+        else:
+            if output:
+                print(f"  [{status:4}] {cmd_str} → {output}")
+            else:
+                print(f"  [{status:4}] {cmd_str}")
+
+    return 1 if failures > 0 else 0
 
 
 if __name__ == "__main__":
