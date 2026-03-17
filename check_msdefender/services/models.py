@@ -5,10 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Protocol
-
-from typing import TypedDict
-
+from typing import Optional, Protocol, TypedDict
 
 # ---------------------------------------------------------------------------
 # TypedDict definitions for Microsoft Defender API JSON responses

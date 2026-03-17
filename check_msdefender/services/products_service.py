@@ -132,9 +132,7 @@ class ProductsService:
         low_count = 0
 
         for vulnerability in products:
-            severity_level = vulnerability.get(
-                "vulnerabilitySeverityLevel", "Unknown"
-            )
+            severity_level = vulnerability.get("vulnerabilitySeverityLevel", "Unknown")
             severity_lower = (severity_level or "Unknown").lower()
             if severity_lower == "critical":
                 critical_count += 1
@@ -211,9 +209,7 @@ class ProductsService:
 
                 # Indicate if more paths exist
                 if len(paths_list) > 4:
-                    detail_object.paths.append(
-                        f" - .. (+{len(paths_list) - 4} more)"
-                    )
+                    detail_object.paths.append(f" - .. (+{len(paths_list) - 4} more)")
 
                 # Add registry paths if available (limit to 4)
                 registry_list = list(software["registryPaths"])

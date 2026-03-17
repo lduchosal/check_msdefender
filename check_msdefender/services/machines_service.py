@@ -65,9 +65,7 @@ class MachinesService:
         )
         for machine in sorted_machines:
             onboarded = (
-                "\u2713"
-                if machine.get("onboardingStatus") == "Onboarded"
-                else "\u2717"
+                "\u2713" if machine.get("onboardingStatus") == "Onboarded" else "\u2717"
             )
             details.append(
                 f"{machine.get('id', '')}: {machine.get('computerDnsName', '')} ({machine.get('osPlatform', '')}) {onboarded}"
