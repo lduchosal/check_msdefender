@@ -3,7 +3,7 @@
 import pytest
 
 from check_msdefender.core.exceptions import ValidationError
-from check_msdefender.services.models import OnboardingStatus
+from check_msdefender.core.models import OnboardingStatus
 from check_msdefender.services.onboarding_service import OnboardingService
 from tests.fixtures.mock_defender_client import MockDefenderClient
 

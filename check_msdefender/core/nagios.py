@@ -85,11 +85,11 @@ class DefenderSummary(nagiosplugin.Summary):
         """Initialize with detailed output lines."""
         self.details = details or []
 
-    def ok(self, results: nagiosplugin.Results) -> str:
+    def ok(self, results: nagiosplugin.Results) -> str:  # noqa: vulture
         """Return detailed output for OK state."""
         return self._format_details()
 
-    def problem(self, results: nagiosplugin.Results) -> str:
+    def problem(self, results: nagiosplugin.Results) -> str:  # noqa: vulture
         """Return detailed output for problem states (WARNING, CRITICAL)."""
         return self._format_details()
 

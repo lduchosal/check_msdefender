@@ -7,7 +7,7 @@ import requests
 
 from check_msdefender.core.exceptions import DefenderAPIError
 from check_msdefender.core.logging_config import get_verbose_logger
-from check_msdefender.services.models import (
+from check_msdefender.core.models import (
     AlertListResponse,
     MachineDict,
     MachineListResponse,

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
-from check_msdefender.services.models import OnboardingStatus
+from check_msdefender.core.models import OnboardingStatus
 
 
 class OnboardingService:

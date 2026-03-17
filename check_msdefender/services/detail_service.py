@@ -7,7 +7,7 @@ from typing import Optional
 
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
-from check_msdefender.services.models import (
+from check_msdefender.core.models import (
     DefenderClientProtocol,
     MachineDict,
     ServiceResult,

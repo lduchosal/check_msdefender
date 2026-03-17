@@ -125,9 +125,7 @@ class DefenderClientProtocol(Protocol):
         """Get machine information by machine ID."""
         ...
 
-    def get_machine_vulnerabilities(
-        self, machine_id: str
-    ) -> VulnerabilityListResponse:
+    def get_machine_vulnerabilities(self, machine_id: str) -> VulnerabilityListResponse:
         """Get vulnerabilities for a machine."""
         ...
 
