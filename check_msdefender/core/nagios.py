@@ -159,6 +159,7 @@ class DefenderResource(nagiosplugin.Resource):
         return "DEFENDER"
 
     def probe(self) -> List[nagiosplugin.Metric]:
+        """Return metrics for the Nagios check."""
         # Use 'found' as metric name for detail command, otherwise use command name
         metric_name = "found" if self.command_name == "detail" else self.command_name
         return [nagiosplugin.Metric(metric_name, self.value)]
