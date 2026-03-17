@@ -31,7 +31,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh api:*)",
-      "WebFetch(domain:pyrefly.org)"
+      "WebFetch(domain:pyrefly.org)",
+      "Bash(pdm bump:*)",
+      "Bash(interrogate --help 2>&1 | grep -A2 \"fail-only\\\\|omit\")"
     ],
     "deny": [],
     "ask": []

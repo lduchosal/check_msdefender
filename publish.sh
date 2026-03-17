@@ -168,10 +168,38 @@ if [ "$QUALITY_ONLY" = true ]; then
 fi
 
 print_step "Running Integration Tests"
-run_command "pdm run check_msdefender_integration" "Integration tests"
+run_integration_tests() {
+    local output
+    output=$(pdm run check_msdefender_integration 2>&1)
+    local exit_code=$?
+
+    # Show only summary: OK if output contains DEFENDER, FAIL otherwise
+    echo "$output" | while IFS= read -r line; do
+        case "$line" in
+            *">>>"*)
+                cmd=$(echo "$line" | sed 's/>>> //')
+                ;;
+            *DEFENDER*)
+                status=$(echo "$line" | grep -o 'DEFENDER [A-Z]*' | head -1)
+                if echo "$line" | grep -q "DEFENDER OK"; then
+                    echo "${GREEN}  ✓ ${cmd} → ${status}${NC}"
+                else
+                    echo "${YELLOW}  ! ${cmd} → ${status}${NC}"
+                fi
+                ;;
+        esac
+    done
+
+    return $exit_code
+}
+run_integration_tests
+if [ $? -ne 0 ]; then
+    print_error "Integration tests failed"
+fi
+print_success "Integration tests completed successfully"
 
 print_step "Bumping Version (pdm bump ${BUMP_TYPE})"
-run_command "pdm bump -v ${BUMP_TYPE}" "Version bump"
+run_command "pdm bump ${BUMP_TYPE}" "Version bump"
 
 # Extract version after bump
 VERSION=$(python -c "import check_msdefender; print(check_msdefender.__version__)")
