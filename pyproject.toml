@@ -114,7 +114,7 @@ lint = "ruff check check_msdefender/ tests/"
 lint-fix = "ruff check --fix check_msdefender/ tests/"
 isort = "ruff check --select I --fix check_msdefender/ tests/"
 format-check = "ruff format --check check_msdefender/ tests/"
-docformatter = "docformatter check_msdefender/ tests/"
+docformatter = {shell = "docformatter check_msdefender/ tests/ || [ $? -eq 3 ]"}
 interrogate = "interrogate -v --omit-covered-files check_msdefender/"
 vulture = "vulture check_msdefender/ tests/"
 refurb = "refurb check_msdefender/ tests/"

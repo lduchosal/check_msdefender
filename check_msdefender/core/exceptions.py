@@ -1,6 +1,5 @@
 """Custom exceptions for check_msdefender."""
 
-
 class CheckMSDefenderError(Exception):
     """Base exception for check_msdefender."""
 

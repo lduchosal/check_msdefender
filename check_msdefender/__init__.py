@@ -1,5 +1,5 @@
 """Check Microsoft Defender API endpoints and check values - Nagios plugin."""
 
-__version__ = "1.2.16"
+__version__ = "1.2.17"
 __author__ = "ldvchosal"
 __email__ = "ldvchosa@github.com"
