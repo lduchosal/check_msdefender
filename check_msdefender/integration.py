@@ -67,6 +67,12 @@ def main() -> int:
             if is_failure:
                 failures += 1
             print(f"  [{status:4}] {cmd_str}")
+            if is_failure:
+                print(f"    exit_code: {result.returncode}")
+                if result.stdout:
+                    print(f"    stdout: {result.stdout.rstrip()}")
+                if result.stderr:
+                    print(f"    stderr: {result.stderr.rstrip()}")
         else:
             print(f"\n>>> {cmd_str}")
             print("-" * 60)
