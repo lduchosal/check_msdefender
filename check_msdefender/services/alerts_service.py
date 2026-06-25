@@ -48,17 +48,16 @@ class AlertsService:
             target_machine_id = machines[0].get("id")
             target_dns_name = dns_name
 
-        # Get all alerts
-        self.logger.info("Fetching alerts from Microsoft Defender")
-        all_alerts = self.defender.get_alerts().get("value", [])
+        if not target_machine_id:
+            raise ValidationError("Could not resolve a machine id for the request")
 
-        # Filter alerts for the specific machine
-        machine_alerts = [
-            alert
-            for alert in all_alerts
-            if alert.get("machineId") == target_machine_id
-            or alert.get("computerDnsName") == target_dns_name
-        ]
+        # Get alerts scoped to the specific machine. Querying the device-scoped
+        # endpoint (instead of the tenant-wide alerts list) avoids silently
+        # dropping this machine's alerts behind a global page-size cap.
+        self.logger.info("Fetching alerts from Microsoft Defender")
+        machine_alerts = self.defender.get_machine_alerts(target_machine_id).get(
+            "value", []
+        )
 
         self.logger.info(
             f"Found {len(machine_alerts)} alerts for machine {target_dns_name}"

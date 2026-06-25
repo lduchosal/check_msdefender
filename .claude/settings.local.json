@@ -33,7 +33,8 @@
       "Bash(gh api:*)",
       "WebFetch(domain:pyrefly.org)",
       "Bash(pdm bump:*)",
-      "Bash(interrogate --help 2>&1 | grep -A2 \"fail-only\\\\|omit\")"
+      "Bash(interrogate --help 2>&1 | grep -A2 \"fail-only\\\\|omit\")",
+      "Bash(gh run *)"
     ],
     "deny": [],
     "ask": []

@@ -8,14 +8,13 @@ import requests
 from check_msdefender.core.exceptions import DefenderAPIError
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import (
+    AlertDict,
     AlertListResponse,
     MachineDict,
     MachineListResponse,
     ProductListResponse,
     VulnerabilityListResponse,
 )
-
-PARAM_TOP = "$top"
 
 PARAM_EXPAND = "$expand"
 
@@ -195,45 +194,85 @@ class DefenderClient:
                 self.logger.debug(f"Response: {e.response.content!r}")
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
-    def get_alerts(self) -> AlertListResponse:
-        """Get alerts from Microsoft Defender."""
-        self.logger.method_entry("get_alerts")
+    def _fetch_alerts_paginated(
+        self, url: str, params: "dict[str, str] | None"
+    ) -> "list[AlertDict]":
+        """
+        Fetch alerts from a URL, following OData ``@odata.nextLink`` pagination.
 
+        Returns the accumulated list of alert objects across every page so that no alert is silently
+        dropped by a server-side page-size cap.
+        """
         token = self._get_token()
 
-        url = f"{self.base_url}/api/alerts"
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": DefenderClient.application_json,
         }
 
-        params = {
-            PARAM_TOP: "100",
-            PARAM_EXPAND: "evidence",
-            PARAM_ORDERBY: "alertCreationTime desc",
-            PARAM_SELECT: "status,title,machineId,computerDnsName,alertCreationTime,firstEventTime,lastEventTime,lastUpdateTime,severity",
-        }
+        alerts: list[AlertDict] = []
+        next_url: "str | None" = url
+        next_params: "dict[str, str] | None" = params
 
         try:
-            start_time = time.time()
-            self.logger.info("Querying alerts")
-            response = requests.get(
-                url, headers=headers, params=params, timeout=self.timeout
-            )
-            elapsed = time.time() - start_time
+            while next_url:
+                start_time = time.time()
+                response = requests.get(
+                    next_url,
+                    headers=headers,
+                    params=next_params,
+                    timeout=self.timeout,
+                )
+                elapsed = time.time() - start_time
 
-            self.logger.api_call("GET", url, response.status_code, elapsed)
-            response.raise_for_status()
+                self.logger.api_call("GET", next_url, response.status_code, elapsed)
+                response.raise_for_status()
 
-            result = cast(AlertListResponse, response.json())
-            self.logger.json_response(str(result))
-            self.logger.method_exit("get_alerts", result)
-            return result
+                page = cast("dict[str, Any]", response.json())
+                alerts.extend(cast("list[AlertDict]", page.get("value", [])))
+
+                # Follow server-driven pagination; nextLink already carries the query.
+                next_link = page.get("@odata.nextLink")
+                next_url = next_link if isinstance(next_link, str) else None
+                next_params = None
+
+            return alerts
         except requests.RequestException as e:
             self.logger.debug(f"API request failed: {e}")
             if hasattr(e, "response") and e.response is not None:
                 self.logger.debug(f"Response: {e.response.content!r}")
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
+
+    def get_alerts(self) -> AlertListResponse:
+        """Get alerts from Microsoft Defender (all pages, tenant-wide)."""
+        self.logger.method_entry("get_alerts")
+        self.logger.info("Querying alerts")
+
+        url = f"{self.base_url}/api/alerts"
+        params = {
+            PARAM_EXPAND: "evidence",
+            PARAM_ORDERBY: "alertCreationTime desc",
+            PARAM_SELECT: "status,title,machineId,computerDnsName,incidentId,alertCreationTime,firstEventTime,lastEventTime,lastUpdateTime,severity",
+        }
+
+        result: AlertListResponse = {"value": self._fetch_alerts_paginated(url, params)}
+        self.logger.json_response(str(result))
+        self.logger.method_exit("get_alerts", result)
+        return result
+
+    def get_machine_alerts(self, machine_id: str) -> AlertListResponse:
+        """Get all alerts related to a specific machine (all pages, device-scoped)."""
+        self.logger.method_entry("get_machine_alerts", machine_id=machine_id)
+        self.logger.info(f"Querying alerts for machine: {machine_id}")
+
+        # The device-scoped alerts endpoint does not support OData query options
+        # (e.g. $expand/$select/$top); sending any returns HTTP 400. Request it bare.
+        url = f"{self.base_url}/api/machines/{machine_id}/alerts"
+
+        result: AlertListResponse = {"value": self._fetch_alerts_paginated(url, None)}
+        self.logger.json_response(str(result))
+        self.logger.method_exit("get_machine_alerts", result)
+        return result
 
     def get_products(self) -> ProductListResponse:
         """Get installed products for a machine."""

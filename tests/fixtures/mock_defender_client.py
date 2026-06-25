@@ -45,3 +45,9 @@ class MockDefenderClient:
     def get_alerts(self):
         """Get all alerts from fixtures."""
         return self.alerts_data["alerts"]
+
+    def get_machine_alerts(self, machine_id):
+        """Get alerts for a specific machine from fixtures (device-scoped)."""
+        all_alerts = self.alerts_data["alerts"]["value"]
+        machine_alerts = [a for a in all_alerts if a.get("machineId") == machine_id]
+        return {"value": machine_alerts}

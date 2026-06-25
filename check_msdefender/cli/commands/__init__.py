@@ -4,6 +4,7 @@ from typing import Any
 
 from .alerts import register_alerts_commands
 from .detail import register_detail_commands
+from .incidents import register_incidents_commands
 from .lastseen import register_lastseen_commands
 from .machines import register_machines_commands
 from .onboarding import register_onboarding_commands
@@ -19,4 +20,5 @@ def register_all_commands(main_group: Any) -> None:
     register_machines_commands(main_group)
     register_detail_commands(main_group)
     register_alerts_commands(main_group)
+    register_incidents_commands(main_group)
     register_products_commands(main_group)

@@ -45,6 +45,7 @@ def main() -> int:
     all_commands = [
         ["check_msdefender", "machines"],
         ["check_msdefender", "alerts", "-d", machine],
+        ["check_msdefender", "incidents", "-d", machine],
         ["check_msdefender", "detail", "-d", machine],
         ["check_msdefender", "lastseen", "-d", machine],
         ["check_msdefender", "onboarding", "-d", machine],

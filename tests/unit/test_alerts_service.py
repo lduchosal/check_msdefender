@@ -23,7 +23,7 @@ class TestAlertsService:
 
     def test_get_result_by_machine_id_success(self):
         """Test successful retrieval by machine ID."""
-        # Mock the alerts API response
+        # Device-scoped alerts API response for the machine
         mock_alerts_data = {
             "value": [
                 {
@@ -57,7 +57,7 @@ class TestAlertsService:
             "computerDnsName": "test.domain.com",
         }
 
-        self.mock_client.get_alerts.return_value = mock_alerts_data
+        self.mock_client.get_machine_alerts.return_value = mock_alerts_data
         self.mock_client.get_machine_by_id.return_value = mock_machine_data
 
         result = self.service.get_result(machine_id="test-machine-123")
@@ -66,8 +66,8 @@ class TestAlertsService:
         assert result["value"] == 1
         assert len(result["details"]) == 2  # Summary line + 1 alert detail
 
-        # Should call the client methods
-        self.mock_client.get_alerts.assert_called_once()
+        # Should call the client methods with the resolved machine id
+        self.mock_client.get_machine_alerts.assert_called_once_with("test-machine-123")
         self.mock_client.get_machine_by_id.assert_called_once_with("test-machine-123")
 
     def test_get_result_by_dns_name_success(self):
@@ -75,7 +75,7 @@ class TestAlertsService:
         # Mock DNS lookup response
         mock_dns_response = {"value": [{"id": "test-machine-456"}]}
 
-        # Mock alerts API response
+        # Device-scoped alerts API response
         mock_alerts_data = {
             "value": [
                 {
@@ -93,7 +93,7 @@ class TestAlertsService:
         }
 
         self.mock_client.get_machine_by_dns_name.return_value = mock_dns_response
-        self.mock_client.get_alerts.return_value = mock_alerts_data
+        self.mock_client.get_machine_alerts.return_value = mock_alerts_data
 
         result = self.service.get_result(dns_name="test.example.com")
 
@@ -101,11 +101,11 @@ class TestAlertsService:
         assert result["value"] == 1
         assert len(result["details"]) == 2  # Summary line + 1 alert detail
 
-        # Should call DNS lookup
+        # Should resolve DNS then query the device-scoped alerts endpoint
         self.mock_client.get_machine_by_dns_name.assert_called_once_with(
             "test.example.com"
         )
-        self.mock_client.get_alerts.assert_called_once()
+        self.mock_client.get_machine_alerts.assert_called_once_with("test-machine-456")
 
     def test_get_result_by_dns_name_not_found(self):
         """Test error when DNS name doesn't exist."""
@@ -119,7 +119,7 @@ class TestAlertsService:
         self.mock_client.get_machine_by_dns_name.assert_called_once_with(
             "nonexistent.domain.com"
         )
-        self.mock_client.get_alerts.assert_not_called()
+        self.mock_client.get_machine_alerts.assert_not_called()
 
     def test_get_result_no_parameters(self):
         """Test error when no parameters provided."""
@@ -130,30 +130,19 @@ class TestAlertsService:
 
         self.mock_client.get_machine_by_dns_name.assert_not_called()
         self.mock_client.get_machine_by_id.assert_not_called()
-        self.mock_client.get_alerts.assert_not_called()
+        self.mock_client.get_machine_alerts.assert_not_called()
 
     def test_get_result_no_alerts_for_machine(self):
         """Test when no alerts exist for the machine."""
-        # Mock alerts API response with no matching alerts
-        mock_alerts_data = {
-            "value": [
-                {
-                    "severity": "High",
-                    "status": "New",
-                    "title": "Alert for different machine",
-                    "alertCreationTime": "2025-09-14T10:22:14.12Z",
-                    "machineId": "different-machine",
-                    "computerDnsName": "other.domain.com",
-                }
-            ]
-        }
+        # Device-scoped endpoint returns no alerts for this machine
+        mock_alerts_data = {"value": []}
 
         mock_machine_data = {
             "id": "test-machine-123",
             "computerDnsName": "test.domain.com",
         }
 
-        self.mock_client.get_alerts.return_value = mock_alerts_data
+        self.mock_client.get_machine_alerts.return_value = mock_alerts_data
         self.mock_client.get_machine_by_id.return_value = mock_machine_data
 
         result = self.service.get_result(machine_id="test-machine-123")
@@ -182,7 +171,7 @@ class TestAlertsService:
             "computerDnsName": "test.domain.com",
         }
 
-        self.mock_client.get_alerts.return_value = mock_alerts_data
+        self.mock_client.get_machine_alerts.return_value = mock_alerts_data
         self.mock_client.get_machine_by_id.return_value = mock_machine_data
 
         result = self.service.get_result(machine_id="test-machine-123")
@@ -227,7 +216,7 @@ class TestAlertsService:
             "computerDnsName": "test.domain.com",
         }
 
-        self.mock_client.get_alerts.return_value = mock_alerts_data
+        self.mock_client.get_machine_alerts.return_value = mock_alerts_data
         self.mock_client.get_machine_by_id.return_value = mock_machine_data
 
         result = self.service.get_result(machine_id="test-machine-123")
@@ -238,7 +227,7 @@ class TestAlertsService:
 
     def test_get_result_api_exception_propagation(self):
         """Test that API exceptions are properly propagated."""
-        self.mock_client.get_alerts.side_effect = Exception("API Error")
+        self.mock_client.get_machine_alerts.side_effect = Exception("API Error")
 
         mock_machine_data = {
             "id": "test-machine-123",
@@ -263,7 +252,7 @@ class TestAlertsService:
             "computerDnsName": "test.domain.com",
         }
 
-        self.mock_client.get_alerts.return_value = mock_alerts_data
+        self.mock_client.get_machine_alerts.return_value = mock_alerts_data
         self.mock_client.get_machine_by_id.return_value = mock_machine_data
 
         self.service.get_result(machine_id="test-machine-123")

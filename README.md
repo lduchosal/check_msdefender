@@ -47,6 +47,9 @@ check_msdefender products -d machine.domain.tld -W 5 -C 1
 # Check alerts
 check_msdefender alerts -d machine.domain.tld -W 1 -C 5
 
+# Check incidents (correlated alert groups)
+check_msdefender incidents -d machine.domain.tld -W 1 -C 5
+
 # List all machines
 check_msdefender machines
 
@@ -63,6 +66,7 @@ check_msdefender detail -d machine.domain.tld
 | `vulnerabilities` | Vulnerability score calculation | W:10, C:100 |
 | `products` | Count of vulnerable software with CVEs | W:5, C:1 |
 | `alerts` | Count of unresolved alerts | W:1, C:0 |
+| `incidents` | Count of unresolved incidents (correlated alerts) | W:1, C:0 |
 | `machines` | List all machines | W:10, C:25 |
 | `detail` | Get detailed machine information | - |
 
@@ -90,6 +94,17 @@ The alerts command monitors unresolved security alerts for a machine:
 - **Excludes informational alerts** when critical/warning alerts exist
 - **Shows alert details** including creation time, title, and severity
 - **Default thresholds**: Warning at 1 alert, Critical at 0 (meaning any alert triggers warning)
+
+### Incident Monitoring
+
+An **incident** is a group of correlated alerts that Microsoft Defender aggregates to describe a
+single attack. Each alert carries the `incidentId` of the incident it belongs to. The incidents
+command:
+- **Queries the device-scoped alerts endpoint** (`/api/machines/{id}/alerts`) so no alert is
+  dropped behind a tenant-wide page-size cap
+- **Counts distinct unresolved incidents** (alerts grouped by `incidentId`, status ≠ "Resolved")
+- **Surfaces the most severe alert** of each incident in the output
+- **Default thresholds**: Warning at 1 incident, Critical at 0 (meaning any incident triggers warning)
 
 ### Onboarding Status Values
 

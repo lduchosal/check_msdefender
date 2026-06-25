@@ -36,6 +36,7 @@ class AlertDict(TypedDict, total=False):
 
     machineId: str
     computerDnsName: str
+    incidentId: int
     status: str
     title: str
     alertCreationTime: str
@@ -135,6 +136,10 @@ class DefenderClientProtocol(Protocol):
 
     def get_alerts(self) -> AlertListResponse:
         """Get alerts from Microsoft Defender."""
+        ...
+
+    def get_machine_alerts(self, machine_id: str) -> AlertListResponse:
+        """Get alerts related to a specific machine."""
         ...
 
     def get_products(self) -> ProductListResponse:
