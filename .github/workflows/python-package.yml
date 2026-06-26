@@ -33,6 +33,37 @@ jobs:
     - name: Build with pdm
       run: |
         pdm build
-    - name: Test with pytest
+    - name: Test with pytest (coverage)
       run: |
-        pdm test
+        pdm run test-ci
+    # SonarCloud reads coverage.xml. Upload it once, from the 3.13 job,
+    # to feed the dedicated SonarCloud job below.
+    - name: Upload coverage.xml for SonarCloud job
+      if: matrix.python-version == '3.13'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-xml
+        path: coverage.xml
+        if-no-files-found: error
+        retention-days: 1
+
+  sonarcloud:
+    name: SonarCloud
+    needs: build
+    runs-on: ubuntu-latest
+    # Fork PRs cannot read SONAR_TOKEN; skip the scan there to avoid a hard fail.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        # SonarCloud uses git blame to attribute issues to authors / new code.
+        fetch-depth: 0
+    - name: Download coverage.xml
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-xml
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarqube-scan-action@v6
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: https://sonarcloud.io

@@ -29,7 +29,12 @@ class IncidentsService:
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> ServiceResult:
-        """Get incidents result with value and details for a machine."""
+        """Get incidents result with value and details for a machine.
+
+        Raises:
+            ValidationError: If neither machine_id nor dns_name is provided,
+                or the machine cannot be resolved.
+        """
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
         if not machine_id and not dns_name:

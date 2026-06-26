@@ -6,7 +6,11 @@ from typing import Optional
 
 
 def load_config(config_path: str = "check_msdefender.ini") -> configparser.ConfigParser:
-    """Load configuration from file."""
+    """Load configuration from file.
+
+    Raises:
+        FileNotFoundError: If no configuration file can be located.
+    """
     config = configparser.ConfigParser()
 
     # Try to find config file

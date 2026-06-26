@@ -34,7 +34,11 @@ class VulnerabilitiesService:
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> ServiceResult:
-        """Get vulnerability result with value and details for a machine."""
+        """Get vulnerability result with value and details for a machine.
+
+        Raises:
+            ValidationError: If neither machine_id nor dns_name is provided.
+        """
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
         if not machine_id and not dns_name:
@@ -92,7 +96,8 @@ class VulnerabilitiesService:
             details.append(f"{vuln.id}: {description} {vuln.severity.upper()}")
 
         self.logger.info(
-            f"Vulnerability score breakdown - Critical: {score.critical}, High: {score.high}, Medium: {score.medium}, Low: {score.low}"
+            f"Vulnerability score breakdown - Critical: {score.critical}, "
+            f"High: {score.high}, Medium: {score.medium}, Low: {score.low}"
         )
         self.logger.info(f"Total vulnerability score: {score.total_score}")
 
@@ -121,7 +126,11 @@ class VulnerabilitiesService:
     def get_detailed_vulnerabilities(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> list[Vulnerability]:
-        """Get detailed vulnerability information for a machine."""
+        """Get detailed vulnerability information for a machine.
+
+        Raises:
+            ValidationError: If neither machine_id nor dns_name is provided.
+        """
         self.logger.method_entry(
             "get_detailed_vulnerabilities", machine_id=machine_id, dns_name=dns_name
         )

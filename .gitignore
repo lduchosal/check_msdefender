@@ -9,3 +9,8 @@
 __pycache__/
 *.pyc
 /.ken
+/.coverage
+/coverage.xml
+/htmlcov/
+/.scannerwork/
+/.pdm-python

@@ -5,13 +5,12 @@
 import sys
 from typing import Any, Optional
 
+from check_msdefender.cli.decorators import common_options
 from check_msdefender.core.auth import get_authenticator
 from check_msdefender.core.config import load_config
 from check_msdefender.core.defender import DefenderClient
 from check_msdefender.core.nagios import NagiosPlugin
 from check_msdefender.services.lastseen_service import LastSeenService
-
-from ..decorators import common_options
 
 
 def register_lastseen_commands(main_group: Any) -> None:

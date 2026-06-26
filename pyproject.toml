@@ -104,21 +104,27 @@ climachines = "check_msdefender machines"
 cli = {composite = ["clihelp", "climachines"]}
 all = {composite = ["install", "format", "build", "test", "cli"]}
 
-test = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing"
+test = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing --cov-report=xml"
 test-quick = "python -m pytest tests/ --tb=no -q"
-test-ci = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing -m 'not reverseproxy'"
+test-ci = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=term-missing --cov-report=xml -m 'not reverseproxy'"
 test-unit = "python -m pytest tests/unit/ -v"
 test-integration = "python -m pytest tests/integration/ -v"
-test-cov = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=html --cov-report=term-missing"
+test-cov = "python -m pytest tests/ -v --cov=check_msdefender --cov-report=html --cov-report=xml --cov-report=term-missing"
 lint = "ruff check check_msdefender/ tests/"
 lint-fix = "ruff check --fix check_msdefender/ tests/"
 isort = "ruff check --select I --fix check_msdefender/ tests/"
 format-check = "ruff format --check check_msdefender/ tests/"
+absolufy = {shell = "find check_msdefender -name '*.py' -exec absolufy-imports {} +"}
+flake8 = "flake8 check_msdefender/"
 docformatter = {shell = "docformatter check_msdefender/ tests/ || [ $? -eq 3 ]"}
 interrogate = "interrogate -v --omit-covered-files check_msdefender/"
 vulture = "vulture check_msdefender/ tests/"
 refurb = "refurb check_msdefender/ tests/"
-check = ["lint", "format-check", "typecheck", "test"]
+metrics = "python scripts/quality_metrics.py"
+metrics-record = "python scripts/quality_metrics.py --record"
+metrics-gate = "python scripts/quality_metrics.py --gate"
+sonar-gate = "python scripts/sonar_gate.py"
+check = {composite = ["isort", "format-check", "lint", "flake8", "typecheck", "interrogate", "refurb", "vulture", "test", "metrics-gate"]}
 bump-version = "pdm bump patch"
 env = "echo ${PATH}"
 clean = "rm -rf .coverage htmlcov/ .pytest_cache/ __pycache__/ check_msdefender/__pycache__/"
@@ -142,4 +148,9 @@ dev = [
     "refurb>=2.0",
     "interrogate>=1.5",
     "docformatter>=1.7",
+    "absolufy-imports>=0.3.1",
+    "flake8>=7.3",
+    "flake8-docstrings>=1.7.0",
+    "flake8-docstrings-complete>=1.3.0",
+    "certifi",
 ]

@@ -68,7 +68,8 @@ class MachinesService:
                 "\u2713" if machine.get("onboardingStatus") == "Onboarded" else "\u2717"
             )
             details.append(
-                f"{machine.get('id', '')}: {machine.get('computerDnsName', '')} ({machine.get('osPlatform', '')}) {onboarded}"
+                f"{machine.get('id', '')}: {machine.get('computerDnsName', '')} "
+                f"({machine.get('osPlatform', '')}) {onboarded}"
             )
 
         result2: ServiceResult = {"value": machine_count, "details": details}

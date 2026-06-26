@@ -16,6 +16,7 @@ class DetailObject:
     """Detail object for a software entry with vulnerabilities."""
 
     def __init__(self, software: str, data: str, score: int) -> None:
+        """Initialize the detail object for a software entry."""
         self.software = software
         self.data = data
         self.score = score
@@ -55,7 +56,11 @@ class ProductsService:
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> ProductsResult:
-        """Get products result with value and details for a machine."""
+        """Get products result with value and details for a machine.
+
+        Raises:
+            ValidationError: If neither machine_id nor dns_name is provided.
+        """
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
         if not machine_id and not dns_name:

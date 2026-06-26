@@ -2,7 +2,7 @@
 
 import click
 
-from .commands import register_all_commands
+from check_msdefender.cli.commands import register_all_commands
 
 
 @click.group()

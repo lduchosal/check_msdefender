@@ -63,7 +63,11 @@ class DefenderClient:
         return endpoints.get(region, endpoints["eu"])
 
     def get_machine_by_dns_name(self, dns_name: str) -> MachineListResponse:
-        """Get machine information by DNS name."""
+        """Get machine information by DNS name.
+
+        Raises:
+            DefenderAPIError: If the Microsoft Defender API request fails.
+        """
         self.logger.method_entry("get_machine_by_dns_name", dns_name=dns_name)
 
         token = self._get_token()
@@ -98,7 +102,11 @@ class DefenderClient:
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_machine_by_id(self, machine_id: str) -> MachineDict:
-        """Get machine information by machine ID."""
+        """Get machine information by machine ID.
+
+        Raises:
+            DefenderAPIError: If the Microsoft Defender API request fails.
+        """
         self.logger.method_entry("get_machine_by_id", machine_id=machine_id)
 
         token = self._get_token()
@@ -129,7 +137,11 @@ class DefenderClient:
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_machine_vulnerabilities(self, machine_id: str) -> VulnerabilityListResponse:
-        """Get vulnerabilities for a machine."""
+        """Get vulnerabilities for a machine.
+
+        Raises:
+            DefenderAPIError: If the Microsoft Defender API request fails.
+        """
         self.logger.method_entry("get_machine_vulnerabilities", machine_id=machine_id)
 
         token = self._get_token()
@@ -160,7 +172,11 @@ class DefenderClient:
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def list_machines(self) -> MachineListResponse:
-        """Get list of all machines."""
+        """Get list of all machines.
+
+        Raises:
+            DefenderAPIError: If the Microsoft Defender API request fails.
+        """
         self.logger.method_entry("list_machines")
 
         token = self._get_token()
@@ -252,7 +268,11 @@ class DefenderClient:
         params = {
             PARAM_EXPAND: "evidence",
             PARAM_ORDERBY: "alertCreationTime desc",
-            PARAM_SELECT: "status,title,machineId,computerDnsName,incidentId,alertCreationTime,firstEventTime,lastEventTime,lastUpdateTime,severity",
+            PARAM_SELECT: (
+                "status,title,machineId,computerDnsName,incidentId,"
+                "alertCreationTime,firstEventTime,lastEventTime,"
+                "lastUpdateTime,severity"
+            ),
         }
 
         result: AlertListResponse = {"value": self._fetch_alerts_paginated(url, params)}
@@ -275,7 +295,11 @@ class DefenderClient:
         return result
 
     def get_products(self) -> ProductListResponse:
-        """Get installed products for a machine."""
+        """Get installed products for a machine.
+
+        Raises:
+            DefenderAPIError: If the Microsoft Defender API request fails.
+        """
         self.logger.method_entry("get_products")
 
         token = self._get_token()

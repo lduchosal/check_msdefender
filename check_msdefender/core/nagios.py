@@ -85,12 +85,14 @@ class DefenderSummary(nagiosplugin.Summary):
         """Initialize with detailed output lines."""
         self.details = details or []
 
-    def ok(self, results: nagiosplugin.Results) -> str:  # noqa: vulture
+    def ok(self, results: nagiosplugin.Results) -> str:
         """Return detailed output for OK state."""
+        del results  # required by the nagiosplugin.Summary interface, unused here
         return self._format_details()
 
-    def problem(self, results: nagiosplugin.Results) -> str:  # noqa: vulture
+    def problem(self, results: nagiosplugin.Results) -> str:
         """Return detailed output for problem states (WARNING, CRITICAL)."""
+        del results  # required by the nagiosplugin.Summary interface, unused here
         return self._format_details()
 
     def _format_details(self) -> str:
@@ -149,6 +151,7 @@ class DefenderResource(nagiosplugin.Resource):
     """Defender resource for getting values with custom service name."""
 
     def __init__(self, command_name: str, value: Union[int, float]) -> None:
+        """Initialize with the service command name and the value to report."""
         super().__init__()
         self.command_name = command_name
         self.value = value

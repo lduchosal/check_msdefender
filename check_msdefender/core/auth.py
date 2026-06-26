@@ -11,7 +11,13 @@ from check_msdefender.core.exceptions import ConfigurationError
 def get_authenticator(
     config: configparser.ConfigParser,
 ) -> Union[ClientSecretCredential, CertificateCredential]:
-    """Get appropriate authenticator based on configuration."""
+    """Get appropriate authenticator based on configuration.
+
+    Raises:
+        ConfigurationError: If the [auth] section or the required credentials
+            (client_id/tenant_id, and either client_secret or a
+            certificate_path/private_key_path pair) are missing.
+    """
     if not config.has_section("auth"):
         raise ConfigurationError("Missing [auth] section in configuration")
 

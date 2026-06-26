@@ -33,6 +33,9 @@ class DetailService:
 
         Returns:
             dict: Result with value (1 or 0) and details list
+
+        Raises:
+            ValidationError: If neither machine_id nor dns_name is provided.
         """
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 

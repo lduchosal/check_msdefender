@@ -2,14 +2,16 @@
 
 from typing import Any
 
-from .alerts import register_alerts_commands
-from .detail import register_detail_commands
-from .incidents import register_incidents_commands
-from .lastseen import register_lastseen_commands
-from .machines import register_machines_commands
-from .onboarding import register_onboarding_commands
-from .products import register_products_commands
-from .vulnerabilities import register_vulnerability_commands
+from check_msdefender.cli.commands.alerts import register_alerts_commands
+from check_msdefender.cli.commands.detail import register_detail_commands
+from check_msdefender.cli.commands.incidents import register_incidents_commands
+from check_msdefender.cli.commands.lastseen import register_lastseen_commands
+from check_msdefender.cli.commands.machines import register_machines_commands
+from check_msdefender.cli.commands.onboarding import register_onboarding_commands
+from check_msdefender.cli.commands.products import register_products_commands
+from check_msdefender.cli.commands.vulnerabilities import (
+    register_vulnerability_commands,
+)
 
 
 def register_all_commands(main_group: Any) -> None:
