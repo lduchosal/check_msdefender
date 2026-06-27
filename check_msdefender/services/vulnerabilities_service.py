@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import (
     DefenderClientProtocol,
@@ -13,6 +12,7 @@ from check_msdefender.core.models import (
     VulnerabilityDict,
     VulnerabilityScore,
 )
+from check_msdefender.services.machine_resolver import resolve_machine_id
 
 
 class VulnerabilitiesService:
@@ -34,27 +34,12 @@ class VulnerabilitiesService:
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> ServiceResult:
-        """Get vulnerability result with value and details for a machine.
-
-        Raises:
-            ValidationError: If neither machine_id nor dns_name is provided.
-        """
+        """Get vulnerability result with value and details for a machine."""
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
-        if not machine_id and not dns_name:
-            raise ValidationError("Either machine_id or dns_name must be provided")
-
-        # Get machine ID if DNS name provided
-        if dns_name:
-            self.logger.info(f"Resolving machine ID for DNS name: {dns_name}")
-            machines_data = self.client.get_machine_by_dns_name(dns_name)
-            if not machines_data.get("value"):
-                raise ValidationError(f"Machine not found with DNS name: {dns_name}")
-            machine_id = machines_data["value"][0].get("id", "")
-            self.logger.debug(f"Resolved machine ID: {machine_id}")
+        machine_id = resolve_machine_id(self.client, machine_id, dns_name)
 
         # Get vulnerabilities for the machine
-        assert machine_id is not None
         self.logger.info(f"Fetching vulnerabilities for machine: {machine_id}")
         raw_vulnerabilities = self.client.get_machine_vulnerabilities(machine_id).get(
             "value", []
@@ -126,29 +111,14 @@ class VulnerabilitiesService:
     def get_detailed_vulnerabilities(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> list[Vulnerability]:
-        """Get detailed vulnerability information for a machine.
-
-        Raises:
-            ValidationError: If neither machine_id nor dns_name is provided.
-        """
+        """Get detailed vulnerability information for a machine."""
         self.logger.method_entry(
             "get_detailed_vulnerabilities", machine_id=machine_id, dns_name=dns_name
         )
 
-        if not machine_id and not dns_name:
-            raise ValidationError("Either machine_id or dns_name must be provided")
-
-        # Get machine ID if DNS name provided
-        if dns_name:
-            self.logger.info(f"Resolving machine ID for DNS name: {dns_name}")
-            machines_data = self.client.get_machine_by_dns_name(dns_name)
-            if not machines_data.get("value"):
-                raise ValidationError(f"Machine not found with DNS name: {dns_name}")
-            machine_id = machines_data["value"][0].get("id", "")
-            self.logger.debug(f"Resolved machine ID: {machine_id}")
+        machine_id = resolve_machine_id(self.client, machine_id, dns_name)
 
         # Get vulnerabilities for the machine
-        assert machine_id is not None
         self.logger.info(f"Fetching vulnerabilities for machine: {machine_id}")
         raw_vulnerabilities = self.client.get_machine_vulnerabilities(machine_id).get(
             "value", []

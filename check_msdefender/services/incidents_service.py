@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Optional
 
-from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import (
     AlertDict,
     DefenderClientProtocol,
     ServiceResult,
 )
+from check_msdefender.services.machine_resolver import resolve_machine
 
 # Ranking used to surface the most severe alert of an incident.
 _SEVERITY_ORDER = {"Informational": 0, "Low": 1, "Medium": 2, "High": 3}
@@ -29,35 +29,12 @@ class IncidentsService:
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> ServiceResult:
-        """Get incidents result with value and details for a machine.
-
-        Raises:
-            ValidationError: If neither machine_id nor dns_name is provided,
-                or the machine cannot be resolved.
-        """
+        """Get incidents result with value and details for a machine."""
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
-        if not machine_id and not dns_name:
-            raise ValidationError("Either machine_id or dns_name must be provided")
-
-        target_dns_name = dns_name
-        target_machine_id = machine_id
-
-        if machine_id:
-            # Get DNS name from machine_id
-            machine_details = self.defender.get_machine_by_id(machine_id)
-            target_dns_name = machine_details.get("computerDnsName", "Unknown")
-        elif dns_name:
-            # Get machine_id from dns_name
-            dns_response = self.defender.get_machine_by_dns_name(dns_name)
-            machines = dns_response.get("value", [])
-            if not machines:
-                raise ValidationError(f"Machine not found with DNS name: {dns_name}")
-            target_machine_id = machines[0].get("id")
-            target_dns_name = dns_name
-
-        if not target_machine_id:
-            raise ValidationError("Could not resolve a machine id for the request")
+        target_machine_id, target_dns_name = resolve_machine(
+            self.defender, machine_id, dns_name
+        )
 
         # Alerts are the building blocks of incidents; each alert carries the
         # incidentId of the incident it was correlated into. Query the

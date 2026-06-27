@@ -12,6 +12,7 @@ from check_msdefender.core.models import (
     DefenderClientProtocol,
     ServiceResult,
 )
+from check_msdefender.services.machine_resolver import resolve_machine_id
 
 
 class LastSeenService:
@@ -30,26 +31,14 @@ class LastSeenService:
         """Get last seen result with value and details for a machine.
 
         Raises:
-            ValidationError: If neither machine_id nor dns_name is provided,
-                or the machine cannot be resolved.
+            ValidationError: If the machine cannot be resolved or has no
+                lastSeen timestamp.
         """
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 
-        if not machine_id and not dns_name:
-            raise ValidationError("Either machine_id or dns_name must be provided")
-
-        # Get machine information
-        if dns_name:
-            self.logger.info(f"Fetching machine data by DNS name: {dns_name}")
-            machines_data = self.defender.get_machine_by_dns_name(dns_name)
-            if not machines_data.get("value"):
-                raise ValidationError(f"Machine not found with DNS name: {dns_name}")
-            machine_data = machines_data["value"][0]
-            self.logger.debug(f"Found machine: {machine_data.get('id', 'unknown')}")
-            machine_id = machine_data.get("id")
+        machine_id = resolve_machine_id(self.defender, machine_id, dns_name)
 
         # Extract last seen timestamp
-        assert machine_id is not None
         machine_details = self.defender.get_machine_by_id(machine_id)
         last_seen_str = machine_details.get("lastSeen")
         if not last_seen_str:
