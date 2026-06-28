@@ -8,8 +8,17 @@ from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import (
     DefenderClientProtocol,
     ProductsResult,
+    ProductVulnerabilityDict,
 )
 from check_msdefender.services.machine_resolver import resolve_machine
+
+# CVSS-style weight applied to each CVE according to its severity.
+_SEVERITY_SCORES: dict[str, int] = {
+    "critical": 100,
+    "high": 10,
+    "medium": 5,
+    "low": 1,
+}
 
 
 class DetailObject:
@@ -76,7 +85,46 @@ class ProductsService:
             f"Found {len(products)} vulnerabilities for machine {target_dns_name}"
         )
 
-        # Group vulnerabilities by software
+        software_vulnerabilities = self._group_by_software(products)
+        severity_counts = self._count_by_severity(products)
+        vulnerable_count = sum(
+            1
+            for software in software_vulnerabilities.values()
+            if len(software["cves"]) > 0
+        )
+
+        details, total_score = self._build_details(
+            software_vulnerabilities, vulnerable_count
+        )
+
+        # Determine the value based on severity:
+        # - Critical vulnerabilities trigger critical threshold
+        # - High/Medium vulnerabilities trigger warning threshold
+        # - Low vulnerabilities or no vulnerabilities are OK
+        result: ProductsResult = {
+            "value": total_score,
+            "details": details,
+            "vulnerable_count": vulnerable_count,
+            "critical_count": severity_counts["critical"],
+            "high_count": severity_counts["high"],
+            "medium_count": severity_counts["medium"],
+            "low_count": severity_counts["low"],
+            "total_cves": len(products),
+            "total_software": len(software_vulnerabilities),
+        }
+
+        self.logger.info(
+            f"Products analysis complete: {vulnerable_count} vulnerable products, "
+            f"score: {total_score}"
+        )
+        self.logger.method_exit("get_result", result)
+        return result
+
+    @staticmethod
+    def _group_by_software(
+        products: list[ProductVulnerabilityDict],
+    ) -> dict[str, SoftwareEntry]:
+        """Group vulnerability records by software (name/version/vendor)."""
         software_vulnerabilities: dict[str, SoftwareEntry] = {}
         for vulnerability in products:
             software_name = vulnerability.get("softwareName", "Unknown")
@@ -109,139 +157,99 @@ class ProductsService:
             entry["registryPaths"].update(registry_paths)
             entry["max_cvss"] = max(entry["max_cvss"], cvss_score)
             entry["severities"].append(severity)
+        return software_vulnerabilities
 
-        # Count vulnerabilities by severity
-        critical_count = 0
-        high_count = 0
-        medium_count = 0
-        low_count = 0
-
+    @staticmethod
+    def _count_by_severity(
+        products: list[ProductVulnerabilityDict],
+    ) -> dict[str, int]:
+        """Count vulnerabilities by severity (critical/high/medium/low)."""
+        counts: dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
         for vulnerability in products:
             severity_level = vulnerability.get("vulnerabilitySeverityLevel", "Unknown")
             severity_lower = (severity_level or "Unknown").lower()
-            if severity_lower == "critical":
-                critical_count += 1
-            elif severity_lower == "high":
-                high_count += 1
-            elif severity_lower == "medium":
-                medium_count += 1
-            elif severity_lower == "low":
-                low_count += 1
+            if severity_lower in counts:
+                counts[severity_lower] += 1
+        return counts
 
-        # Count vulnerable software for reporting
-        vulnerable_software = [
-            software
-            for software in software_vulnerabilities.values()
-            if len(software["cves"]) > 0
-        ]
-
-        # Create details for output
+    def _build_details(
+        self,
+        software_vulnerabilities: dict[str, SoftwareEntry],
+        vulnerable_count: int,
+    ) -> tuple[list[str], int]:
+        """Build the human-readable detail lines and the total score."""
         details: list[str] = []
-        total_score = 0
-        if software_vulnerabilities:
-            detail_objects: list[DetailObject] = []
+        if not software_vulnerabilities:
+            return details, 0
 
-            # Add software details
-            for software in list(software_vulnerabilities.values()):
-                score = 0
+        detail_objects = [
+            self._build_detail_object(software)
+            for software in software_vulnerabilities.values()
+        ]
+        total_score = sum(detail_object.score for detail_object in detail_objects)
 
-                cve_count = len(software["cves"])
-                unique_cves = list({cve["cve_id"] for cve in software["cves"]})
-                cve_list = ", ".join(unique_cves[:5])  # Show first 5 CVEs
-                # Count severities
-                severity_counts: dict[str, int] = {
-                    "Critical": 0,
-                    "High": 0,
-                    "Medium": 0,
-                    "Low": 0,
-                    "Unknown": 0,
-                }
-                for sev in software["severities"]:
-                    sev_key = sev or "Unknown"
-                    severity_counts[sev_key] += 1
-                severities = ", ".join(
-                    f"{key}: {value}"
-                    for key, value in severity_counts.items()
-                    if value > 0
-                )
+        summary_line = f"{vulnerable_count} vulnerable products, score: {total_score}"
+        details.extend((summary_line, ""))
 
-                for cve in software["cves"]:
-                    cve_severity = (cve["severity"] or "Unknown").lower()
-                    if cve_severity == "critical":
-                        score += 100
-                    elif cve_severity == "high":
-                        score += 10
-                    elif cve_severity == "medium":
-                        score += 5
-                    elif cve_severity == "low":
-                        score += 1
+        # Sort detail objects by score descending
+        detail_objects.sort(key=lambda x: x.score, reverse=True)
 
-                if len(unique_cves) > 5:
-                    cve_list += f".. (+{len(unique_cves) - 5} more)"
+        # Limit to top 10
+        for detail_object in detail_objects[:10]:
+            details.append(f"{detail_object.software} - {detail_object.data}")
+            details.extend(detail_object.paths)
+            details.append("")
 
-                detail_object = DetailObject(
-                    software=f"{software['name']} {software['version']} ({software['vendor']})",
-                    data=f"Score: {score}, CVEs: {cve_count} ({severities}), ({cve_list})",
-                    score=score,
-                )
+        return details, total_score
 
-                total_score += score
+    @staticmethod
+    def _build_detail_object(software: SoftwareEntry) -> DetailObject:
+        """Build a single software detail entry with its score and paths."""
+        cve_count = len(software["cves"])
+        unique_cves = list({cve["cve_id"] for cve in software["cves"]})
+        cve_list = ", ".join(unique_cves[:5])  # Show first 5 CVEs
 
-                # Add paths (limit to 4)
-                paths_list = list(software["paths"])
-                for path in paths_list[:4]:
-                    detail_object.paths.append(f" - {path}")
-
-                # Indicate if more paths exist
-                if len(paths_list) > 4:
-                    detail_object.paths.append(f" - .. (+{len(paths_list) - 4} more)")
-
-                # Add registry paths if available (limit to 4)
-                registry_list = list(software["registryPaths"])
-                for registry_path in registry_list[:4]:
-                    detail_object.paths.append(f" - {registry_path}")
-
-                # Indicate if more registry paths exist
-                if len(registry_list) > 4:
-                    detail_object.paths.append(
-                        f" - .. (+{len(registry_list) - 4} more)"
-                    )
-
-                # Collect detail objects for sorting
-                detail_objects.append(detail_object)
-
-            summary_line = (
-                f"{len(vulnerable_software)} vulnerable products, score: {total_score}"
-            )
-            details.extend((summary_line, ""))
-
-            # Sort detail objects by score descending
-            detail_objects.sort(key=lambda x: x.score, reverse=True)
-
-            # Limit to top 10
-            for detail_object in detail_objects[:10]:
-                details.append(f"{detail_object.software} - {detail_object.data}")
-                details.extend(detail_object.paths)
-                details.append("")
-
-        # Determine the value based on severity:
-        # - Critical vulnerabilities trigger critical threshold
-        # - High/Medium vulnerabilities trigger warning threshold
-        # - Low vulnerabilities or no vulnerabilities are OK
-        result: ProductsResult = {
-            "value": total_score,
-            "details": details,
-            "vulnerable_count": len(vulnerable_software),
-            "critical_count": critical_count,
-            "high_count": high_count,
-            "medium_count": medium_count,
-            "low_count": low_count,
-            "total_cves": len(products),
-            "total_software": len(software_vulnerabilities),
+        # Count severities
+        severity_counts: dict[str, int] = {
+            "Critical": 0,
+            "High": 0,
+            "Medium": 0,
+            "Low": 0,
+            "Unknown": 0,
         }
-
-        self.logger.info(
-            f"Products analysis complete: {len(vulnerable_software)} vulnerable products, score: {total_score}"
+        for sev in software["severities"]:
+            sev_key = sev or "Unknown"
+            severity_counts[sev_key] += 1
+        severities = ", ".join(
+            f"{key}: {value}" for key, value in severity_counts.items() if value > 0
         )
-        self.logger.method_exit("get_result", result)
-        return result
+
+        score = sum(
+            _SEVERITY_SCORES.get((cve["severity"] or "Unknown").lower(), 0)
+            for cve in software["cves"]
+        )
+
+        if len(unique_cves) > 5:
+            cve_list += f".. (+{len(unique_cves) - 5} more)"
+
+        detail_object = DetailObject(
+            software=f"{software['name']} {software['version']} ({software['vendor']})",
+            data=f"Score: {score}, CVEs: {cve_count} ({severities}), ({cve_list})",
+            score=score,
+        )
+
+        # Add paths (limit to 4)
+        paths_list = list(software["paths"])
+        for path in paths_list[:4]:
+            detail_object.paths.append(f" - {path}")
+        if len(paths_list) > 4:
+            detail_object.paths.append(f" - .. (+{len(paths_list) - 4} more)")
+
+        # Add registry paths if available (limit to 4)
+        registry_list = list(software["registryPaths"])
+        for registry_path in registry_list[:4]:
+            detail_object.paths.append(f" - {registry_path}")
+        if len(registry_list) > 4:
+            detail_object.paths.append(f" - .. (+{len(registry_list) - 4} more)")
+
+        return detail_object

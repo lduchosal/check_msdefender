@@ -25,6 +25,9 @@ class MachinesService:
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> ServiceResult:
         """Get machine count result with value and details."""
+        # machine_id/dns_name are part of the service get_result interface but
+        # not used here: this command always reports on every machine.
+        del machine_id, dns_name
         self.logger.method_entry("get_result")
 
         # Get all machines

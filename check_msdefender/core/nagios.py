@@ -1,7 +1,7 @@
 """Nagios plugin implementation."""
 
 import traceback
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import nagiosplugin
 
@@ -12,8 +12,8 @@ class DefenderScalarContext(nagiosplugin.ScalarContext):
     def __init__(
         self,
         name: str,
-        warning: Optional[Union[float, int]] = None,
-        critical: Optional[Union[float, int]] = None,
+        warning: float | int | None = None,
+        critical: float | int | None = None,
     ) -> None:
         """Initialize with custom threshold logic."""
         # Store original values to know what was actually set
@@ -114,8 +114,8 @@ class NagiosPlugin:
         self,
         machine_id: Optional[str] = None,
         dns_name: Optional[str] = None,
-        warning: Optional[Union[float, int]] = None,
-        critical: Optional[Union[float, int]] = None,
+        warning: float | int | None = None,
+        critical: float | int | None = None,
         verbose: int = 0,
     ) -> int:
         """Execute the check and return Nagios exit code."""
@@ -135,12 +135,15 @@ class NagiosPlugin:
                 DefenderSummary(details),
             )
 
-            # Run check and return exit code instead of exiting
-            try:
-                check.main(verbose=verbose)
-                return 0  # If main() doesn't exit, it's OK
-            except SystemExit as e:
-                return int(e.code) if e.code is not None else 0
+            # Run the check and return the exit code instead of exiting.
+            # This mirrors Check.main() but stops short of Runtime.sysexit(),
+            # so we never have to swallow the SystemExit it would raise.
+            # nagiosplugin ships no type hints, hence the Any handle.
+            runtime: Any = nagiosplugin.Runtime()
+            runtime.verbose = verbose
+            runtime.run(check)
+            print(str(runtime.output), end="")
+            return int(runtime.exitcode)
 
         except Exception as e:
             print(f"UNKNOWN: {e}\n{traceback.format_exc()}")
@@ -150,7 +153,7 @@ class NagiosPlugin:
 class DefenderResource(nagiosplugin.Resource):
     """Defender resource for getting values with custom service name."""
 
-    def __init__(self, command_name: str, value: Union[int, float]) -> None:
+    def __init__(self, command_name: str, value: int | float) -> None:
         """Initialize with the service command name and the value to report."""
         super().__init__()
         self.command_name = command_name
