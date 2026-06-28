@@ -63,7 +63,8 @@ class DefenderClient:
         return endpoints.get(region, endpoints["eu"])
 
     def get_machine_by_dns_name(self, dns_name: str) -> MachineListResponse:
-        """Get machine information by DNS name.
+        """
+        Get machine information by DNS name.
 
         Raises:
             DefenderAPIError: If the Microsoft Defender API request fails.
@@ -102,7 +103,8 @@ class DefenderClient:
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_machine_by_id(self, machine_id: str) -> MachineDict:
-        """Get machine information by machine ID.
+        """
+        Get machine information by machine ID.
 
         Raises:
             DefenderAPIError: If the Microsoft Defender API request fails.
@@ -137,7 +139,8 @@ class DefenderClient:
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def get_machine_vulnerabilities(self, machine_id: str) -> VulnerabilityListResponse:
-        """Get vulnerabilities for a machine.
+        """
+        Get vulnerabilities for a machine.
 
         Raises:
             DefenderAPIError: If the Microsoft Defender API request fails.
@@ -172,7 +175,8 @@ class DefenderClient:
             raise DefenderAPIError(f"Failed to query MS Defender API: {e}")
 
     def list_machines(self) -> MachineListResponse:
-        """Get list of all machines.
+        """
+        Get list of all machines.
 
         Raises:
             DefenderAPIError: If the Microsoft Defender API request fails.
@@ -295,7 +299,8 @@ class DefenderClient:
         return result
 
     def get_products(self) -> ProductListResponse:
-        """Get installed products for a machine.
+        """
+        Get installed products for a machine.
 
         Raises:
             DefenderAPIError: If the Microsoft Defender API request fails.

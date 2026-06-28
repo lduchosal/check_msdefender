@@ -10,7 +10,8 @@ from check_msdefender.core.exceptions import ConfigurationError
 def get_authenticator(
     config: configparser.ConfigParser,
 ) -> ClientSecretCredential | CertificateCredential:
-    """Get appropriate authenticator based on configuration.
+    """
+    Get appropriate authenticator based on configuration.
 
     Raises:
         ConfigurationError: If the [auth] section or the required credentials

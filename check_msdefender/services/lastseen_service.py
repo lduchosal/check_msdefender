@@ -28,7 +28,8 @@ class LastSeenService:
     def get_result(
         self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
     ) -> ServiceResult:
-        """Get last seen result with value and details for a machine.
+        """
+        Get last seen result with value and details for a machine.
 
         Raises:
             ValidationError: If the machine cannot be resolved or has no

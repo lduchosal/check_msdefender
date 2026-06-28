@@ -115,8 +115,9 @@ class TestProductsService:
             self.service.get_result()
 
     def test_severity_weights_and_line_format(self):
-        """Each severity adds its fixed weight (100/10/5/1, Unknown=0) and the
-        detail line keeps its exact format."""
+        """Each severity adds its fixed weight (100/10/5/1, Unknown=0) and the detail line keeps its
+        exact format.
+        """
         self.mock_client.get_products.return_value = {
             "value": [
                 _product(cve="CVE-1", severity="Critical"),
@@ -176,8 +177,9 @@ class TestProductsService:
         assert " - .. (+1 more)" in path_lines  # 5 registry paths -> +1
 
     def test_top_10_limit_and_descending_sort(self):
-        """All software is counted, but only the 10 highest scores are detailed,
-        sorted descending; the total score still sums every product."""
+        """All software is counted, but only the 10 highest scores are detailed, sorted descending;
+        the total score still sums every product.
+        """
         items = []
         for s in range(12):
             # soft{s} has (s + 1) Critical CVEs -> score (s + 1) * 100.

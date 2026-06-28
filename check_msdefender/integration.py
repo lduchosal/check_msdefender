@@ -7,7 +7,8 @@ from pathlib import Path
 
 
 def find_config() -> Path:
-    """Find the configuration file.
+    """
+    Find the configuration file.
 
     Raises:
         FileNotFoundError: If no configuration file exists in any known location.

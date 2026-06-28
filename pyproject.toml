@@ -116,7 +116,10 @@ isort = "ruff check --select I --fix check_msdefender/ tests/"
 format-check = "ruff format --check check_msdefender/ tests/"
 absolufy = {shell = "find check_msdefender -name '*.py' -exec absolufy-imports {} +"}
 flake8 = "flake8 check_msdefender/"
-docformatter = {shell = "docformatter check_msdefender/ tests/ || [ $? -eq 3 ]"}
+# exceptions.py is excluded: docformatter 1.7.8 collapses the blank line after
+# the module docstring, conflicting with ruff format (wants 2) and flake8 E302.
+# Exclude matches on basename in in-place mode (the full path is ignored there).
+docformatter = {shell = "docformatter check_msdefender/ tests/ --exclude exceptions.py || [ $? -eq 3 ]"}
 interrogate = "interrogate -v --omit-covered-files check_msdefender/"
 vulture = "vulture check_msdefender/ tests/"
 refurb = "refurb check_msdefender/ tests/"

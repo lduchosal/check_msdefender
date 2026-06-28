@@ -1,9 +1,9 @@
-"""Shared machine-identity resolution used across services.
+"""
+Shared machine-identity resolution used across services.
 
-Translates the ``(machine_id, dns_name)`` pair a CLI command receives into
-the identifiers the Defender API needs, raising a uniform ValidationError.
-Keeping this in one place removes the resolution boilerplate that was
-duplicated across every service.
+Translates the ``(machine_id, dns_name)`` pair a CLI command receives into the identifiers the
+Defender API needs, raising a uniform ValidationError. Keeping this in one place removes the
+resolution boilerplate that was duplicated across every service.
 """
 
 from __future__ import annotations
@@ -17,7 +17,8 @@ def resolve_machine(
     machine_id: str | None,
     dns_name: str | None,
 ) -> tuple[str, str]:
-    """Resolve a machine to its ``(id, dns_name)`` from either identifier.
+    """
+    Resolve a machine to its ``(id, dns_name)`` from either identifier.
 
     When ``machine_id`` is given the DNS name is looked up; when only
     ``dns_name`` is given the id is looked up.
@@ -48,7 +49,8 @@ def resolve_machine_id(
     machine_id: str | None,
     dns_name: str | None,
 ) -> str:
-    """Resolve a machine id, looking it up by DNS name when needed.
+    """
+    Resolve a machine id, looking it up by DNS name when needed.
 
     Raises:
         ValidationError: If neither identifier is provided, the named machine
