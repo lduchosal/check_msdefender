@@ -1,8 +1,19 @@
 # 🛡️ Check MS Defender
 
-[![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
+[![PyPI version](https://img.shields.io/pypi/v/check-msdefender.svg)](https://pypi.org/project/check-msdefender/)
+[![Python versions](https://img.shields.io/pypi/pyversions/check-msdefender.svg)](https://pypi.org/project/check-msdefender/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/lduchosal/check_msdefender)
+[![Build](https://github.com/lduchosal/check_msdefender/actions/workflows/python-package.yml/badge.svg)](https://github.com/lduchosal/check_msdefender/actions/workflows/python-package.yml)
+[![Publish](https://github.com/lduchosal/check_msdefender/actions/workflows/publish.yml/badge.svg)](https://github.com/lduchosal/check_msdefender/actions/workflows/publish.yml)
+[![Docstring coverage](./interrogate_badge.svg)](./interrogate_badge.svg)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=bugs)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=lduchosal_check_msdefender&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=lduchosal_check_msdefender)
 
 A comprehensive **Nagios plugin** for monitoring Microsoft Defender for Endpoint API endpoints. Built with modern Python practices and designed for enterprise monitoring environments.
 
@@ -14,7 +25,7 @@ A comprehensive **Nagios plugin** for monitoring Microsoft Defender for Endpoint
 - 🏗️ **Clean Architecture** - Modular design with testable components
 - 🔧 **Flexible Configuration** - File-based configuration with sensible defaults
 - 📈 **Verbose Logging** - Multi-level debugging support
-- 🐍 **Modern Python** - Built with Python 3.9+ using type hints and async patterns
+- 🐍 **Modern Python** - Built with Python 3.10+ using type hints and async patterns
 
 ## 🚀 Quick Start
 
