@@ -19,7 +19,14 @@ class DefenderScalarContext(nagiosplugin.ScalarContext):
         # Store original values to know what was actually set
         self._original_warning = warning
         self._original_critical = critical
-        super().__init__(name, warning, critical)
+        # nagiosplugin's Range() coerces a falsy spec to '' (no threshold),
+        # so a numeric 0 threshold would be silently dropped. Pass the
+        # thresholds as strings: Range("0") parses to the 0:0 range.
+        super().__init__(
+            name,
+            str(warning) if warning is not None else None,
+            str(critical) if critical is not None else None,
+        )
 
     def evaluate(
         self, metric: nagiosplugin.Metric, resource: nagiosplugin.Resource

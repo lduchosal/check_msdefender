@@ -394,7 +394,8 @@ class TestDetailCommand:
 
         assert result.exit_code == 1  # Warning
         assert "DEFENDER WARNING - Machine not found" in result.output
-        assert "found=0;;1" in result.output
+        # -W 0 must survive into perfdata (a falsy 0 used to be dropped)
+        assert "found=0;0.0;1" in result.output
 
     @patch("check_msdefender.cli.commands.detail.load_config")
     @patch("check_msdefender.cli.commands.detail.get_authenticator")
