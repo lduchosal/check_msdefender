@@ -118,3 +118,11 @@ class TestGetAlerts:
 
         assert len(result["value"]) == 2
         assert mock_get.call_count == 2
+
+
+class TestDefaultTimeout:
+    """Default request timeout (ken #974)."""
+
+    def test_default_timeout_is_30s(self):
+        """The client default matches the documented 30s default."""
+        assert _make_client().timeout == 30

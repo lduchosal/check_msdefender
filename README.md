@@ -137,7 +137,7 @@ client_secret = your-client-secret
 tenant_id = your-azure-tenant-id
 
 [settings]
-timeout = 5
+timeout = 30
 ```
 
 #### Certificate Authentication
@@ -149,7 +149,7 @@ certificate_path = /path/to/certificate.pem
 private_key_path = /path/to/private_key.pem
 
 [settings]
-timeout = 5
+timeout = 30
 ```
 
 ### Microsoft Defender API Setup

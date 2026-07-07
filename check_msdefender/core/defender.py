@@ -33,7 +33,7 @@ class DefenderClient:
     def __init__(
         self,
         authenticator: Any,
-        timeout: int = 15,
+        timeout: int = 30,
         region: str = "api",
         verbose_level: int = 0,
     ) -> None:

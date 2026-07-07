@@ -1,5 +1,6 @@
 """Integration tests for lastseen command."""
 
+import configparser
 from unittest.mock import Mock, patch
 
 import click
@@ -37,7 +38,7 @@ def test_lastseen_command_success(
 ):
     """Test successful lastseen command execution."""
     # Setup mocks
-    mock_config.return_value = {"config": "test"}
+    mock_config.return_value = configparser.ConfigParser()
     mock_auth.return_value = Mock()
     mock_client.return_value = Mock()
     mock_service_instance = Mock()

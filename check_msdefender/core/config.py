@@ -24,6 +24,17 @@ def load_config(config_path: str = "check_msdefender.ini") -> configparser.Confi
     return config
 
 
+def get_timeout(config: configparser.ConfigParser) -> int:
+    """
+    Read the request timeout in seconds from [settings], defaulting to 30.
+
+    Heavy TVM endpoints (machine vulnerabilities) can exceed short timeouts on machines with a large
+    vulnerable surface; keep the worst case of the two sequential API calls under the Nagios
+    service_check_timeout (60s).
+    """
+    return config.getint("settings", "timeout", fallback=30)
+
+
 def _find_config_file(config_path: str) -> Optional[str]:
     """Find configuration file in current directory or Nagios base directory."""
     # If absolute path provided, use it

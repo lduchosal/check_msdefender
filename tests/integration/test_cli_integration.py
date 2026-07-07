@@ -1,5 +1,6 @@
 """Integration tests for CLI interface end-to-end without external dependencies."""
 
+import configparser
 from unittest.mock import Mock, patch
 
 import pytest
@@ -56,7 +57,7 @@ class TestLastSeenCommand:
     ):
         """Test lastseen command without arguments."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -82,7 +83,7 @@ class TestLastSeenCommand:
     ):
         """Test lastseen command with DNS name."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -127,7 +128,7 @@ class TestOnboardingCommand:
     ):
         """Test onboarding command with DNS name."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -171,7 +172,7 @@ class TestVulnerabilitiesCommand:
     ):
         """Test vulnerabilities command with DNS name."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -203,7 +204,7 @@ class TestVulnerabilitiesCommand:
     ):
         """Test vulnerabilities command with verbose flag."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -235,7 +236,7 @@ class TestVulnerabilitiesCommand:
     ):
         """Test vulnerabilities command with multiple verbose flags."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -282,7 +283,7 @@ class TestDetailCommand:
     ):
         """Test detail command with machine ID using -i flag."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -314,7 +315,7 @@ class TestDetailCommand:
     ):
         """Test detail command with machine ID using -m flag."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -345,7 +346,7 @@ class TestDetailCommand:
     ):
         """Test detail command with DNS name."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -377,7 +378,7 @@ class TestDetailCommand:
     ):
         """Test detail command when machine not found with warning threshold."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -406,7 +407,7 @@ class TestDetailCommand:
     ):
         """Test detail command when machine not found with critical threshold."""
         # Setup mocks
-        mock_config.return_value = {"config": "test"}
+        mock_config.return_value = configparser.ConfigParser()
         mock_auth.return_value = Mock()
         mock_client.return_value = Mock()
         mock_service_instance = Mock()
@@ -445,3 +446,57 @@ class TestDetailCommand:
         )
         assert "-m, -i, --machine-id, --id TEXT" in result.output
         assert "-d, --dns-name TEXT" in result.output
+
+
+class TestTimeoutWiring:
+    """[settings] timeout must reach DefenderClient (ken #974)."""
+
+    @patch("check_msdefender.cli.commands.vulnerabilities.load_config")
+    @patch("check_msdefender.cli.commands.vulnerabilities.get_authenticator")
+    @patch("check_msdefender.cli.commands.vulnerabilities.DefenderClient")
+    @patch("check_msdefender.cli.commands.vulnerabilities.VulnerabilitiesService")
+    @patch("check_msdefender.cli.commands.vulnerabilities.NagiosPlugin")
+    def test_configured_timeout_reaches_client(
+        self, mock_nagios, mock_service, mock_client, mock_auth, mock_config, cli_runner
+    ):
+        """A timeout set in [settings] is passed to DefenderClient."""
+        config = configparser.ConfigParser()
+        config.read_string("[settings]\ntimeout = 45\n")
+        mock_config.return_value = config
+        mock_auth.return_value = Mock()
+        mock_client.return_value = Mock()
+        mock_service.return_value = Mock()
+        mock_plugin = Mock()
+        mock_nagios.return_value = mock_plugin
+        mock_plugin.check.return_value = 0
+
+        result = cli_runner.invoke(
+            main, ["vulnerabilities", "-d", "machine.domain.tld"]
+        )
+
+        assert result.exit_code == 0
+        assert mock_client.call_args.kwargs["timeout"] == 45
+
+    @patch("check_msdefender.cli.commands.vulnerabilities.load_config")
+    @patch("check_msdefender.cli.commands.vulnerabilities.get_authenticator")
+    @patch("check_msdefender.cli.commands.vulnerabilities.DefenderClient")
+    @patch("check_msdefender.cli.commands.vulnerabilities.VulnerabilitiesService")
+    @patch("check_msdefender.cli.commands.vulnerabilities.NagiosPlugin")
+    def test_default_timeout_without_settings(
+        self, mock_nagios, mock_service, mock_client, mock_auth, mock_config, cli_runner
+    ):
+        """Without [settings], DefenderClient gets the 30s default."""
+        mock_config.return_value = configparser.ConfigParser()
+        mock_auth.return_value = Mock()
+        mock_client.return_value = Mock()
+        mock_service.return_value = Mock()
+        mock_plugin = Mock()
+        mock_nagios.return_value = mock_plugin
+        mock_plugin.check.return_value = 0
+
+        result = cli_runner.invoke(
+            main, ["vulnerabilities", "-d", "machine.domain.tld"]
+        )
+
+        assert result.exit_code == 0
+        assert mock_client.call_args.kwargs["timeout"] == 30

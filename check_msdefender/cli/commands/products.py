@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from check_msdefender.cli.decorators import common_options
 from check_msdefender.core.auth import get_authenticator
-from check_msdefender.core.config import load_config
+from check_msdefender.core.config import get_timeout, load_config
 from check_msdefender.core.defender import DefenderClient
 from check_msdefender.core.nagios import NagiosPlugin
 from check_msdefender.services.products_service import ProductsService
@@ -42,7 +42,9 @@ def register_products_commands(main_group: Any) -> None:
             authenticator = get_authenticator(cfg)
 
             # Create Defender client
-            client = DefenderClient(authenticator, verbose_level=verbose)
+            client = DefenderClient(
+                authenticator, timeout=get_timeout(cfg), verbose_level=verbose
+            )
 
             # Create the products service
             service = ProductsService(client, verbose_level=verbose)
