@@ -59,6 +59,7 @@ def test_command_does_not_return_unknown(command: str) -> None:
         ["check_msdefender", command, "-d", machine],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode < NAGIOS_UNKNOWN, (

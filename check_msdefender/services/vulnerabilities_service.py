@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import (
     DefenderClientProtocol,
@@ -32,7 +30,7 @@ class VulnerabilitiesService:
         }
 
     def get_result(
-        self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
+        self, machine_id: str | None = None, dns_name: str | None = None
     ) -> ServiceResult:
         """Get vulnerability result with value and details for a machine."""
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
@@ -97,7 +95,7 @@ class VulnerabilitiesService:
         return result
 
     def clean_and_truncate(
-        self, text: Optional[str], prefix: str = "Summary: ", word_count: int = 10
+        self, text: str | None, prefix: str = "Summary: ", word_count: int = 10
     ) -> str:
         """Clean and truncate text to a given word count."""
         # Handle None text
@@ -109,7 +107,7 @@ class VulnerabilitiesService:
         return " ".join(words)
 
     def get_detailed_vulnerabilities(
-        self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
+        self, machine_id: str | None = None, dns_name: str | None = None
     ) -> list[Vulnerability]:
         """Get detailed vulnerability information for a machine."""
         self.logger.method_entry(

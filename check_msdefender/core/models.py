@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Protocol, TypedDict
+from typing import Protocol, TypedDict
 
 # ---------------------------------------------------------------------------
 # TypedDict definitions for Microsoft Defender API JSON responses
@@ -166,8 +166,8 @@ class Machine:
 
     id: str
     computer_dns_name: str
-    last_seen: Optional[datetime] = None
-    onboarding_status: Optional[OnboardingStatus] = None
+    last_seen: datetime | None = None
+    onboarding_status: OnboardingStatus | None = None
 
 
 @dataclass
@@ -177,7 +177,7 @@ class Vulnerability:
     id: str
     severity: str
     title: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 @dataclass

@@ -1,7 +1,7 @@
 """Nagios plugin implementation."""
 
 import traceback
-from typing import Any, List, Optional
+from typing import Any
 
 import nagiosplugin
 
@@ -12,8 +12,8 @@ class DefenderScalarContext(nagiosplugin.ScalarContext):
     def __init__(
         self,
         name: str,
-        warning: float | int | None = None,
-        critical: float | int | None = None,
+        warning: float | None = None,
+        critical: float | None = None,
     ) -> None:
         """Initialize with custom threshold logic."""
         # Store original values to know what was actually set
@@ -88,7 +88,7 @@ class DefenderScalarContext(nagiosplugin.ScalarContext):
 class DefenderSummary(nagiosplugin.Summary):
     """Custom summary class for detailed Nagios output."""
 
-    def __init__(self, details: Optional[List[str]]) -> None:
+    def __init__(self, details: list[str] | None) -> None:
         """Initialize with detailed output lines."""
         self.details = details or []
 
@@ -119,10 +119,10 @@ class NagiosPlugin:
 
     def check(
         self,
-        machine_id: Optional[str] = None,
-        dns_name: Optional[str] = None,
-        warning: float | int | None = None,
-        critical: float | int | None = None,
+        machine_id: str | None = None,
+        dns_name: str | None = None,
+        warning: float | None = None,
+        critical: float | None = None,
         verbose: int = 0,
     ) -> int:
         """Execute the check and return Nagios exit code."""
@@ -152,7 +152,7 @@ class NagiosPlugin:
             print(str(runtime.output), end="")
             return int(runtime.exitcode)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"UNKNOWN: {e}\n{traceback.format_exc()}")
             return 3
 
@@ -160,7 +160,7 @@ class NagiosPlugin:
 class DefenderResource(nagiosplugin.Resource):
     """Defender resource for getting values with custom service name."""
 
-    def __init__(self, command_name: str, value: int | float) -> None:
+    def __init__(self, command_name: str, value: float) -> None:
         """Initialize with the service command name and the value to report."""
         super().__init__()
         self.command_name = command_name
@@ -171,7 +171,7 @@ class DefenderResource(nagiosplugin.Resource):
         """Return custom service name."""
         return "DEFENDER"
 
-    def probe(self) -> List[nagiosplugin.Metric]:
+    def probe(self) -> list[nagiosplugin.Metric]:
         """Return metrics for the Nagios check."""
         # Use 'found' as metric name for detail command, otherwise use command name
         metric_name = "found" if self.command_name == "detail" else self.command_name

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 from check_msdefender.core.exceptions import ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
@@ -23,10 +22,10 @@ class DetailService:
         """Initialize with Defender client."""
         self.defender = defender_client
         self.logger = get_verbose_logger(__name__, verbose_level)
-        self._machine_details: Optional[MachineDict] = None
+        self._machine_details: MachineDict | None = None
 
     def get_result(
-        self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
+        self, machine_id: str | None = None, dns_name: str | None = None
     ) -> ServiceResult:
         """
         Get machine details result with value and details.
@@ -90,7 +89,7 @@ class DetailService:
             self.logger.debug(f"Failed to get machine details: {e}")
             raise
 
-    def get_machine_details_json(self) -> Optional[str]:
+    def get_machine_details_json(self) -> str | None:
         """Get the machine details as formatted JSON string."""
         if self._machine_details is None:
             return None

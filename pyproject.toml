@@ -118,8 +118,11 @@ absolufy = {shell = "find check_msdefender -name '*.py' -exec absolufy-imports {
 flake8 = "flake8 check_msdefender/"
 # exceptions.py is excluded: docformatter 1.7.8 collapses the blank line after
 # the module docstring, conflicting with ruff format (wants 2) and flake8 E302.
+# __init__.py is excluded for the same collapse on docstring-only function
+# bodies (cli/__init__.py main(), pass-less since ruff PIE790): docformatter
+# folds the two blank lines after the def, tripping flake8 E305.
 # Exclude matches on basename in in-place mode (the full path is ignored there).
-docformatter = {shell = "docformatter check_msdefender/ tests/ --exclude exceptions.py || [ $? -eq 3 ]"}
+docformatter = {shell = "docformatter check_msdefender/ tests/ --exclude exceptions.py __init__.py || [ $? -eq 3 ]"}
 interrogate = "interrogate -v --omit-covered-files check_msdefender/"
 vulture = "vulture check_msdefender/ tests/"
 refurb = "refurb check_msdefender/ tests/"
@@ -144,7 +147,7 @@ dev = [
     "pytest-asyncio>=1.0",
     "twine>=6.2.0",
     "pdm>=2.0.0",
-    "ruff>=0.13.0",
+    "ruff>=0.16.0",
     "pyright>=1.1",
     "pdm-bump",
     "vulture>=2.0",

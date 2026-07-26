@@ -3,7 +3,7 @@
 # pyright: reportUnusedFunction=false
 
 import sys
-from typing import Any, Optional
+from typing import Any
 
 from check_msdefender.cli.decorators import common_options
 from check_msdefender.core.auth import get_authenticator
@@ -21,10 +21,10 @@ def register_products_commands(main_group: Any) -> None:
     def products_cmd(
         config: str,
         verbose: int,
-        machine_id: Optional[str],
-        dns_name: Optional[str],
-        warning: Optional[float],
-        critical: Optional[float],
+        machine_id: str | None,
+        dns_name: str | None,
+        warning: float | None,
+        critical: float | None,
     ) -> None:
         """Check installed products for Microsoft Defender."""
         warning = (
@@ -63,6 +63,6 @@ def register_products_commands(main_group: Any) -> None:
 
             sys.exit(result)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"UNKNOWN: {e}")
             sys.exit(3)

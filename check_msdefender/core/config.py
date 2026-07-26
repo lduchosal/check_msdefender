@@ -2,7 +2,6 @@
 
 import configparser
 from pathlib import Path
-from typing import Optional
 
 
 def load_config(config_path: str = "check_msdefender.ini") -> configparser.ConfigParser:
@@ -35,7 +34,7 @@ def get_timeout(config: configparser.ConfigParser) -> int:
     return config.getint("settings", "timeout", fallback=30)
 
 
-def _find_config_file(config_path: str) -> Optional[str]:
+def _find_config_file(config_path: str) -> str | None:
     """Find configuration file in current directory or Nagios base directory."""
     # If absolute path provided, use it
     if Path(config_path).is_absolute():

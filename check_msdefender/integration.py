@@ -67,7 +67,7 @@ def main() -> int:
         cmd_str = " ".join(cmd)
 
         if quiet:
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
             is_failure = result.returncode >= nagios_unknown
             status = "FAIL" if is_failure else "OK"
             if is_failure:
@@ -82,7 +82,7 @@ def main() -> int:
         else:
             print(f"\n>>> {cmd_str}")
             print("-" * 60)
-            result = subprocess.run(cmd, capture_output=False)
+            result = subprocess.run(cmd, capture_output=False, check=False)
             if result.returncode >= nagios_unknown:
                 failures += 1
 

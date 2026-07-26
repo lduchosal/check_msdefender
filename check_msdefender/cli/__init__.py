@@ -9,7 +9,6 @@ from check_msdefender.cli.commands import register_all_commands
 @click.version_option()
 def main() -> None:
     """Check Microsoft Defender API endpoints and validate values."""
-    pass
 
 
 # Register all commands

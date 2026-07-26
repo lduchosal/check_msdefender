@@ -1,6 +1,6 @@
 """Onboarding status service implementation."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import OnboardingStatus
@@ -16,8 +16,8 @@ class OnboardingService:
         self.logger = get_verbose_logger(__name__, verbose_level)
 
     def get_result(
-        self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, machine_id: str | None = None, dns_name: str | None = None
+    ) -> dict[str, Any]:
         """Get onboarding status result with value and details for a machine."""
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
 

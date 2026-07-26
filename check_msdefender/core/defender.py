@@ -231,8 +231,8 @@ class DefenderClient:
         }
 
         alerts: list[AlertDict] = []
-        next_url: "str | None" = url
-        next_params: "dict[str, str] | None" = params
+        next_url: str | None = url
+        next_params: dict[str, str] | None = params
 
         try:
             while next_url:

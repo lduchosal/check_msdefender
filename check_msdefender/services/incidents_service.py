@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import (
     AlertDict,
@@ -27,7 +25,7 @@ class IncidentsService:
         self.logger = get_verbose_logger(__name__, verbose_level)
 
     def get_result(
-        self, machine_id: Optional[str] = None, dns_name: Optional[str] = None
+        self, machine_id: str | None = None, dns_name: str | None = None
     ) -> ServiceResult:
         """Get incidents result with value and details for a machine."""
         self.logger.method_entry("get_result", machine_id=machine_id, dns_name=dns_name)
@@ -70,9 +68,9 @@ class IncidentsService:
 
     def _build_details(
         self,
-        target_dns_name: Optional[str],
-        incidents: "dict[int, list[AlertDict]]",
-    ) -> "list[str]":
+        target_dns_name: str | None,
+        incidents: dict[int, list[AlertDict]],
+    ) -> list[str]:
         """Format a summary line plus one line per incident (limited to 10)."""
         details: list[str] = []
         if not incidents:

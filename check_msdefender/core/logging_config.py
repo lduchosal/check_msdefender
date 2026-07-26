@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Any, Optional
+from typing import Any
 
 
 class VerboseLogger:
@@ -51,9 +51,7 @@ class VerboseLogger:
         self.logger.addHandler(handler)
 
         # Set level based on verbosity
-        if self.verbose_level >= 3:
-            self.logger.setLevel(logging.DEBUG)
-        elif self.verbose_level >= 2:
+        if self.verbose_level >= 3 or self.verbose_level >= 2:
             self.logger.setLevel(logging.DEBUG)
         else:
             self.logger.setLevel(logging.INFO)
@@ -77,8 +75,8 @@ class VerboseLogger:
         self,
         method: str,
         url: str,
-        status_code: Optional[int] = None,
-        response_time: Optional[float] = None,
+        status_code: int | None = None,
+        response_time: float | None = None,
     ) -> None:
         """Log API call details if verbose >= 2."""
         if self.verbose_level >= 2:
