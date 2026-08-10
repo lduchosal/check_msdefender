@@ -50,9 +50,15 @@ jobs:
         tenant_id = ${AZURE_TENANT_ID}
         client_secret = ${AZURE_CLIENT_SECRET}
 
+        # timeout: generous on purpose. The integration tests hit the live TVM endpoint
+        # GET /api/machines/{id}/vulnerabilities, whose latency grows with the machine's
+        # vulnerable surface and regularly exceeded 10s here (4 of the last 12 scheduled
+        # runs failed on that single ReadTimeout). The 60s Nagios service_check_timeout
+        # that keeps the plugin default at 30s does not constrain CI: these tests are a
+        # release gate, so a slower run is cheaper than a blocked publish.
         [settings]
         api_version = v1.0
-        timeout = 10
+        timeout = 60
 
         [integration]
         machine = ${INTEGRATION_MACHINE}
