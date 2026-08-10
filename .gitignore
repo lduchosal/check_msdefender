@@ -14,3 +14,5 @@ __pycache__/
 /htmlcov/
 /.scannerwork/
 /.pdm-python
+# generated from wiki/ by `ken wiki build` — the MD tree is the source of truth
+/wiki-html/
