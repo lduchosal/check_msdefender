@@ -185,3 +185,33 @@ class TestProductsVerifier:
         ProductsVerifier(probe).verify("h", software)
 
         assert probe.probe.call_args[0][1] == ["c:\\a.dll", "c:\\b.dll"]
+
+
+class TestVerifierHostOverride:
+    """The name Defender knows and the name the probe can dial are two things.
+
+    Measured in production (ken #1568): Defender reports q.arcantel.ch, which is the
+    Nagios *alias*; the monitoring server only trusts the host_name q.arcantel.dev in
+    known_hosts, so dialing the Defender name failed with "Host key verification failed"
+    while every other check on that host worked.
+    """
+
+    def test_probe_dials_the_override(self):
+        """Given an override, the probe is asked about that name, not Defender's."""
+        probe = _probe({})
+
+        ProductsVerifier(probe, host_override="q.arcantel.dev").verify(
+            "q.arcantel.ch", {"k": _entry(paths=["c:\a.dll"])}
+        )
+
+        assert probe.probe.call_args[0][0] == "q.arcantel.dev"
+
+    def test_defender_name_is_the_default(self):
+        """Without an override, nothing changes: the Defender name is dialed."""
+        probe = _probe({})
+
+        ProductsVerifier(probe).verify(
+            "q.arcantel.ch", {"k": _entry(paths=["c:\a.dll"])}
+        )
+
+        assert probe.probe.call_args[0][0] == "q.arcantel.ch"

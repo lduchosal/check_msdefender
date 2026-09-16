@@ -60,9 +60,24 @@ class PathProbeProtocol(Protocol):
 class ProductsVerifier:
     """Split reported software into what the host still confirms and what it does not."""
 
-    def __init__(self, probe: PathProbeProtocol, verbose_level: int = 0) -> None:
-        """Initialize with the path probe to question and the verbosity level."""
+    def __init__(
+        self,
+        probe: PathProbeProtocol,
+        verbose_level: int = 0,
+        host_override: str | None = None,
+    ) -> None:
+        """
+        Initialize with the path probe to question and the verbosity level.
+
+        host_override is the name the probe should dial, when it differs from the name
+        Defender knows the machine by. The two are not the same thing: Defender reports
+        the machine's own DNS name, while the monitoring server reaches it under whatever
+        name its transport trusts -- its Nagios host_name, the entry in known_hosts. On a
+        machine whose Defender name is an alias, dialing the Defender name fails with
+        "Host key verification failed" even though every other check on that host works.
+        """
         self.probe = probe
+        self.host_override = host_override
         self.logger = get_verbose_logger(__name__, verbose_level)
 
     def verify(
@@ -79,14 +94,15 @@ class ProductsVerifier:
             The stale entries, the number of entries that could not be decided, and the
             probe error when the host could not be questioned at all.
         """
-        self.logger.method_entry("verify", host=host, software=len(software))
+        target = self.host_override or host
+        self.logger.method_entry("verify", host=target, software=len(software))
         paths = sorted(
             {path for entry in software.values() for path in _evidence(entry)}
         )
         if not paths:
             return VerificationOutcome(unverified=len(software))
         try:
-            verdicts = self.probe.probe(host, paths)
+            verdicts = self.probe.probe(target, paths)
         except PathProbeError as exc:
             self.logger.info(f"Path verification unavailable: {exc}")
             return VerificationOutcome(unverified=len(software), error=str(exc))

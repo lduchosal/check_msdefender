@@ -28,9 +28,18 @@ _VERIFY_HELP = (
     "host cannot answer for stays counted."
 )
 
+_VERIFY_HOST_HELP = (
+    "Name the probe should dial, when the monitoring server does not reach the "
+    "machine under the name Defender knows it by (a Nagios alias, for instance). "
+    "Defaults to the Defender name."
+)
+
 
 def _build_verifier(
-    cfg: configparser.ConfigParser, verify_paths: bool, verbose: int
+    cfg: configparser.ConfigParser,
+    verify_paths: bool,
+    verbose: int,
+    verify_host: str | None = None,
 ) -> ProductsVerifier | None:
     """Build the path verifier when the check was asked to confirm what it reports."""
     if not verify_paths:
@@ -38,7 +47,7 @@ def _build_verifier(
     probe = CommandPathProbe(
         get_verify_command(cfg), get_verify_timeout(cfg), verbose_level=verbose
     )
-    return ProductsVerifier(probe, verbose_level=verbose)
+    return ProductsVerifier(probe, verbose_level=verbose, host_override=verify_host)
 
 
 def _check_products(
@@ -49,6 +58,7 @@ def _check_products(
     warning: float,
     critical: float,
     verify_paths: bool,
+    verify_host: str | None,
 ) -> int:
     """Run the products check and return its Nagios exit code."""
     cfg = load_config(config)
@@ -58,7 +68,7 @@ def _check_products(
     service = ProductsService(
         client,
         verbose_level=verbose,
-        verifier=_build_verifier(cfg, verify_paths, verbose),
+        verifier=_build_verifier(cfg, verify_paths, verbose, verify_host),
     )
     return NagiosPlugin(service, "products").check(
         machine_id=machine_id,
@@ -75,6 +85,7 @@ def register_products_commands(main_group: Any) -> None:
     @main_group.command("products")
     @common_options
     @click.option("--verify-paths", is_flag=True, help=_VERIFY_HELP)
+    @click.option("--verify-host", default=None, help=_VERIFY_HOST_HELP)
     def products_cmd(
         config: str,
         verbose: int,
@@ -83,6 +94,7 @@ def register_products_commands(main_group: Any) -> None:
         warning: float | None,
         critical: float | None,
         verify_paths: bool,
+        verify_host: str | None,
     ) -> None:
         """Check installed products for Microsoft Defender."""
         # Trigger warning on any high/medium severity, critical on any critical one.
@@ -98,6 +110,7 @@ def register_products_commands(main_group: Any) -> None:
                 warning,
                 critical,
                 verify_paths,
+                verify_host,
             )
             sys.exit(result)
         except Exception as e:  # noqa: BLE001

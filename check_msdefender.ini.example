@@ -29,6 +29,9 @@ timeout = 30
 # Optional: Timeout in seconds for that command (default: 20)
 timeout = 20
 
+# The name substituted into {host} is the one Defender reports. When the monitoring
+# server reaches the machine under another name, pass it per check with --verify-host.
+
 [integration]
 # Machine DNS name for integration tests
 machine = your-machine.example.com

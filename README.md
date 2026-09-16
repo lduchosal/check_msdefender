@@ -135,6 +135,15 @@ command = ssh -o BatchMode=yes -o ConnectTimeout=5 -l nagioscmd {host} powershel
 timeout = 20
 ```
 
+The name dialed is the one Defender reports for the machine. When the monitoring server
+reaches it under a different name -- a Nagios `host_name` whose `alias` is the Defender
+name, say -- pass that name with `--verify-host`, or the probe fails on a host key it has
+never seen while every other check on that host works:
+
+```
+check_msdefender products -d $HOSTALIAS$ --verify-paths --verify-host $HOSTNAME$
+```
+
 Paths go in on stdin, one per line; the command answers one line per path:
 
 ```
