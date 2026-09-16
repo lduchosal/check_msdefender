@@ -98,11 +98,12 @@ class TestNagiosPluginAlertsDefaults:
 
 
 class TestExtraPerfdataMetrics:
-    """Side metrics are graphed, and never change the status.
+    """
+    Side metrics are graphed, and never change the status.
 
-    The products check publishes the score it compared to the thresholds, but also the
-    raw score before path verification and what that verification excluded. Those extra
-    curves must not be able to turn a check red on their own.
+    The products check publishes the score it compared to the thresholds, but also the raw score
+    before path verification and what that verification excluded. Those extra curves must not be
+    able to turn a check red on their own.
     """
 
     @staticmethod
@@ -117,7 +118,7 @@ class TestExtraPerfdataMetrics:
         return service
 
     def test_extra_metrics_reach_perfdata(self, capsys):
-        """raw/stale/unverified are rendered next to the main metric."""
+        """Raw/stale/unverified are rendered next to the main metric."""
         service = self._service([("raw", 105), ("stale", 100), ("unverified", 1)])
 
         code = NagiosPlugin(service, "products").check(

@@ -1,14 +1,15 @@
-"""Date the software entries Defender reports against the host's real filesystem.
+"""
+Date the software entries Defender reports against the host's real filesystem.
 
-The Defender export lags reality by days: an uninstalled product keeps being reported,
-and so does a product that has since been patched. Both show up as score, and an operator
-cannot tell them apart from a machine that really carries the vulnerable binary.
+The Defender export lags reality by days: an uninstalled product keeps being reported, and so does a
+product that has since been patched. Both show up as score, and an operator cannot tell them apart
+from a machine that really carries the vulnerable binary.
 
-This module asks the host and takes an entry out of the score only when the host says,
-without ambiguity, that nothing confirms it any more. Every uncertain answer -- a path we
-were not allowed to read, a probe that failed, an entry the export gave no path for --
-keeps its product counted. Removing a real finding is a monitoring failure; keeping a
-stale one for one more cycle is only noise.
+This module asks the host and takes an entry out of the score only when the host says, without
+ambiguity, that nothing confirms it any more. Every uncertain answer -- a path we were not allowed
+to read, a probe that failed, an entry the export gave no path for -- keeps its product counted.
+Removing a real finding is a monitoring failure; keeping a stale one for one more cycle is only
+noise.
 """
 
 from __future__ import annotations

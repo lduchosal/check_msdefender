@@ -97,7 +97,7 @@ class TestProductsServiceVerification:
         )
 
     def test_perfdata_metrics_keep_the_raw_curve(self):
-        """raw/stale/unverified are published next to the net score."""
+        """Raw/stale/unverified are published next to the net score."""
         outcome = VerificationOutcome(
             stale={_STALE_KEY: StaleEntry("removed", "d:\\gone\\python.exe")},
             unverified=1,

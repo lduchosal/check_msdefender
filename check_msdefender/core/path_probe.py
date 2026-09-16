@@ -1,16 +1,16 @@
-"""Ask a monitored host whether the paths Defender reports still exist.
+"""
+Ask a monitored host whether the paths Defender reports still exist.
 
-Microsoft's ``SoftwareVulnerabilitiesByMachine`` export is a snapshot regenerated on
-Microsoft's own cadence: a product uninstalled today keeps being reported for days, and
-an entry whose files were deleted long ago can linger. The evidence needed to date an
-entry is already in the export -- every record carries the disk and registry paths where
-the product was seen -- so the only missing piece is an oracle answering "is this path
-still there?".
+Microsoft's ``SoftwareVulnerabilitiesByMachine`` export is a snapshot regenerated on Microsoft's own
+cadence: a product uninstalled today keeps being reported for days, and an entry whose files were
+deleted long ago can linger. The evidence needed to date an entry is already in the export -- every
+record carries the disk and registry paths where the product was seen -- so the only missing piece
+is an oracle answering "is this path still there?".
 
-The oracle is a single command run once per check, configured as a template so the
-plugin stays transport-agnostic (the Nagios host already reaches its Windows machines
-over SSH, but nothing here depends on that). Paths go in on stdin, one per line; verdicts
-come back as ``STATE<TAB>VERSION<TAB>PATH``.
+The oracle is a single command run once per check, configured as a template so the plugin stays
+transport-agnostic (the Nagios host already reaches its Windows machines over SSH, but nothing here
+depends on that). Paths go in on stdin, one per line; verdicts come back as
+``STATE<TAB>VERSION<TAB>PATH``.
 """
 
 from __future__ import annotations

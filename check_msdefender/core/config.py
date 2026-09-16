@@ -40,9 +40,9 @@ def get_verify_command(config: configparser.ConfigParser) -> str:
     """
     Read the path verification command template from [verify], with the SSH default.
 
-    The template is split shell-style and run without a shell; ``{host}`` is replaced by
-    the machine's DNS name. Keeping it in configuration is what lets the check work on an
-    estate whose monitoring server reaches its hosts some other way.
+    The template is split shell-style and run without a shell; ``{host}`` is replaced by the
+    machine's DNS name. Keeping it in configuration is what lets the check work on an estate whose
+    monitoring server reaches its hosts some other way.
     """
     return config.get("verify", "command", fallback=DEFAULT_VERIFY_COMMAND)
 
@@ -51,8 +51,8 @@ def get_verify_timeout(config: configparser.ConfigParser) -> int:
     """
     Read the path verification timeout in seconds from [verify], defaulting to 20.
 
-    It is spent on top of the API calls, so keep the sum under the Nagios
-    service_check_timeout (60s). A probe that times out leaves the score unfiltered.
+    It is spent on top of the API calls, so keep the sum under the Nagios service_check_timeout
+    (60s). A probe that times out leaves the score unfiltered.
     """
     return config.getint("verify", "timeout", fallback=20)
 
