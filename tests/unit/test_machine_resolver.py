@@ -35,8 +35,9 @@ class TestResolveMachine:
 
     def test_neither_raises(self):
         """No identifier → ValidationError."""
+        defender = Mock()
         with pytest.raises(ValidationError, match="Either machine_id or dns_name"):
-            resolve_machine(Mock(), None, None)
+            resolve_machine(defender, None, None)
 
     def test_dns_not_found_raises(self):
         """dns_name with no machine → ValidationError."""
@@ -70,8 +71,9 @@ class TestResolveMachineId:
 
     def test_neither_raises(self):
         """No identifier → ValidationError."""
+        defender = Mock()
         with pytest.raises(ValidationError, match="Either machine_id or dns_name"):
-            resolve_machine_id(Mock(), None, None)
+            resolve_machine_id(defender, None, None)
 
     def test_dns_not_found_raises(self):
         """dns_name with no machine → ValidationError."""

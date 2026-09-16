@@ -100,8 +100,9 @@ class TestCommandPathProbe:
 
     def test_empty_command_raises(self):
         """An empty template is a configuration error, caught before running anything."""
+        probe = CommandPathProbe("   ", 5)
         with pytest.raises(PathProbeError, match="empty verification command"):
-            CommandPathProbe("   ", 5).probe("h", ["c:\\a"])
+            probe.probe("h", ["c:\\a"])
 
     def test_paths_are_capped(self):
         """Beyond the cap, paths are simply not submitted (so they stay unverified)."""
