@@ -69,12 +69,12 @@ class ProductsVerifier:
         """
         Initialize with the path probe to question and the verbosity level.
 
-        host_override is the name the probe should dial, when it differs from the name
-        Defender knows the machine by. The two are not the same thing: Defender reports
-        the machine's own DNS name, while the monitoring server reaches it under whatever
-        name its transport trusts -- its Nagios host_name, the entry in known_hosts. On a
-        machine whose Defender name is an alias, dialing the Defender name fails with
-        "Host key verification failed" even though every other check on that host works.
+        host_override is the name the probe should dial, when it differs from the name Defender
+        knows the machine by. The two are not the same thing: Defender reports the machine's own DNS
+        name, while the monitoring server reaches it under whatever name its transport trusts -- its
+        Nagios host_name, the entry in known_hosts. On a machine whose Defender name is an alias,
+        dialing the Defender name fails with "Host key verification failed" even though every other
+        check on that host works.
         """
         self.probe = probe
         self.host_override = host_override

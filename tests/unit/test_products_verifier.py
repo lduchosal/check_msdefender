@@ -188,12 +188,13 @@ class TestProductsVerifier:
 
 
 class TestVerifierHostOverride:
-    """The name Defender knows and the name the probe can dial are two things.
+    """
+    The name Defender knows and the name the probe can dial are two things.
 
-    Measured in production (ken #1568): Defender reports q.arcantel.ch, which is the
-    Nagios *alias*; the monitoring server only trusts the host_name q.arcantel.dev in
-    known_hosts, so dialing the Defender name failed with "Host key verification failed"
-    while every other check on that host worked.
+    Measured in production (ken #1568): Defender reports q.arcantel.ch, which is the Nagios *alias*;
+    the monitoring server only trusts the host_name q.arcantel.dev in known_hosts, so dialing the
+    Defender name failed with "Host key verification failed" while every other check on that host
+    worked.
     """
 
     def test_probe_dials_the_override(self):
