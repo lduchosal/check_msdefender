@@ -1,6 +1,7 @@
 """Nagios plugin implementation."""
 
 import traceback
+from itertools import starmap
 from typing import Any
 
 import nagiosplugin
@@ -130,6 +131,10 @@ class NagiosPlugin:
             result = self.service.get_result(machine_id=machine_id, dns_name=dns_name)
             value = result["value"]
             details = result.get("details", [])
+            # Side metrics carry context the thresholds must not react to (the raw score
+            # before path verification, what it excluded). Plain ScalarContexts: they are
+            # graphed, they never change the status.
+            extra: list[tuple[str, float]] = result.get("metrics", [])
 
             # Create Nagios check with custom summary
             # Use 'found' as context name for detail command, otherwise use command name
@@ -137,8 +142,9 @@ class NagiosPlugin:
                 "found" if self.command_name == "detail" else self.command_name
             )
             check = nagiosplugin.Check(
-                DefenderResource(self.command_name, value),
+                DefenderResource(self.command_name, value, extra),
                 DefenderScalarContext(context_name, warning, critical),
+                *[nagiosplugin.ScalarContext(name) for name, _ in extra],
                 DefenderSummary(details),
             )
 
@@ -160,11 +166,17 @@ class NagiosPlugin:
 class DefenderResource(nagiosplugin.Resource):
     """Defender resource for getting values with custom service name."""
 
-    def __init__(self, command_name: str, value: float) -> None:
-        """Initialize with the service command name and the value to report."""
+    def __init__(
+        self,
+        command_name: str,
+        value: float,
+        extra: list[tuple[str, float]] | None = None,
+    ) -> None:
+        """Initialize with the service command name and the values to report."""
         super().__init__()
         self.command_name = command_name
         self.value = value
+        self.extra = extra or []
 
     @property
     def name(self) -> str:
@@ -175,4 +187,6 @@ class DefenderResource(nagiosplugin.Resource):
         """Return metrics for the Nagios check."""
         # Use 'found' as metric name for detail command, otherwise use command name
         metric_name = "found" if self.command_name == "detail" else self.command_name
-        return [nagiosplugin.Metric(metric_name, self.value)]
+        metrics = [nagiosplugin.Metric(metric_name, self.value)]
+        metrics.extend(starmap(nagiosplugin.Metric, self.extra))
+        return metrics

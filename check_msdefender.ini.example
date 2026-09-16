@@ -17,6 +17,18 @@ api_version = v1.0
 # Optional: Timeout in seconds (default: 30)
 timeout = 30
 
+[verify]
+# Optional: only used by `products --verify-paths`.
+# Command asking a host whether the paths Defender reports still exist. {host} is
+# replaced by the machine DNS name; the template is split shell-style and run WITHOUT a
+# shell. Paths arrive on stdin (one per line), verdicts come back as
+# STATE<TAB>VERSION<TAB>PATH with STATE in PRESENT/ABSENT/DENIED/ERROR.
+# Default: ssh -o BatchMode=yes -o ConnectTimeout=5 -l nagioscmd {host} powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File c:/programdata/nagioscmd/scripts/test_paths.ps1
+# command = ssh -l nagioscmd {host} check-paths
+
+# Optional: Timeout in seconds for that command (default: 20)
+timeout = 20
+
 [integration]
 # Machine DNS name for integration tests
 machine = your-machine.example.com

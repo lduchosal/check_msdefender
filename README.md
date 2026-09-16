@@ -98,6 +98,52 @@ The products command monitors installed software with known CVE vulnerabilities:
 - **Default thresholds**: Warning at 5 vulnerable software, Critical at 1
 - **Displays up to 10 software entries** with first 5 CVEs per software
 
+#### `--verify-paths`: dropping what the host no longer carries
+
+Microsoft's `SoftwareVulnerabilitiesByMachine` export is a snapshot regenerated on
+Microsoft's own cadence, so an uninstalled product keeps being reported for days, and so
+does a product that has already been patched. The export carries its own evidence: the
+disk and registry paths where each product was seen.
+
+With `--verify-paths`, the check submits those paths to the machine in a single remote
+command and drops every product the host no longer confirms:
+
+- **`removed`** - none of the reported paths exists any more
+- **`upgraded`** - the file is there, but in a version above the one reported
+
+Everything the host cannot answer for keeps its score: a path that could not be read
+(`DENIED`), an unreachable drive or share, a product the export gave no path for, or a
+probe that failed altogether. **A failed probe never turns the check green** - the raw
+score is what gets compared to the thresholds, and the output says so.
+
+Excluded products stay visible under `Stale entries excluded`, with the reason and the
+path that decided it, and the perfdata keeps the raw curve:
+
+```
+products=3319;500;2000 raw=6743 stale=3424 unverified=2
+```
+
+The probe itself is a command template, so the check is not tied to any one transport:
+
+```ini
+[verify]
+# {host} is replaced by the machine's DNS name; the template is split shell-style and
+# run without a shell. Default: ssh to the Nagios command account.
+command = ssh -o BatchMode=yes -o ConnectTimeout=5 -l nagioscmd {host} powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File c:/programdata/nagioscmd/scripts/test_paths.ps1
+# Seconds; spent on top of the API calls, so keep the sum under the Nagios
+# service_check_timeout. Default: 20
+timeout = 20
+```
+
+Paths go in on stdin, one per line; the command answers one line per path:
+
+```
+STATE<TAB>VERSION<TAB>PATH
+```
+
+where `STATE` is `PRESENT`, `ABSENT`, `DENIED` or `ERROR`. A reference implementation for
+Windows hosts ships with the Arcantel `winnagioscmd` Ansible role as `test_paths.ps1`.
+
 ### Alert Monitoring
 
 The alerts command monitors unresolved security alerts for a machine:

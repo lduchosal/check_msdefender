@@ -95,3 +95,63 @@ class TestNagiosPluginAlertsDefaults:
         output = capsys.readouterr().out
         assert exit_code == 0
         assert "DEFENDER OK" in output
+
+
+class TestExtraPerfdataMetrics:
+    """Side metrics are graphed, and never change the status.
+
+    The products check publishes the score it compared to the thresholds, but also the
+    raw score before path verification and what that verification excluded. Those extra
+    curves must not be able to turn a check red on their own.
+    """
+
+    @staticmethod
+    def _service(metrics):
+        """Build a service returning a fixed value plus the given side metrics."""
+        service = Mock()
+        service.get_result.return_value = {
+            "value": 5,
+            "details": ["1 vulnerable products, score: 5"],
+            "metrics": metrics,
+        }
+        return service
+
+    def test_extra_metrics_reach_perfdata(self, capsys):
+        """raw/stale/unverified are rendered next to the main metric."""
+        service = self._service([("raw", 105), ("stale", 100), ("unverified", 1)])
+
+        code = NagiosPlugin(service, "products").check(
+            machine_id="m1", warning=500, critical=2000
+        )
+
+        output = capsys.readouterr().out
+        assert code == 0
+        assert "products=5;500;2000" in output
+        assert "raw=105" in output
+        assert "stale=100" in output
+        assert "unverified=1" in output
+
+    def test_extra_metrics_do_not_raise_the_status(self, capsys):
+        """A huge raw score stays OK as long as the compared value is under threshold."""
+        service = self._service([("raw", 99999)])
+
+        code = NagiosPlugin(service, "products").check(
+            machine_id="m1", warning=500, critical=2000
+        )
+
+        capsys.readouterr()
+        assert code == 0
+
+    def test_no_metrics_key_keeps_the_single_metric(self, capsys):
+        """A service that publishes no side metric renders exactly as before."""
+        service = Mock()
+        service.get_result.return_value = {"value": 5, "details": []}
+
+        code = NagiosPlugin(service, "products").check(
+            machine_id="m1", warning=500, critical=2000
+        )
+
+        output = capsys.readouterr().out
+        assert code == 0
+        assert "| products=5;500;2000" in output
+        assert "raw=" not in output

@@ -96,6 +96,26 @@ class ServiceResult(TypedDict, total=False):
     details: list[str]
 
 
+class CveInfo(TypedDict):
+    """CVE information dictionary."""
+
+    cve_id: str
+    severity: str
+
+
+class SoftwareEntry(TypedDict):
+    """Aggregated software vulnerability entry."""
+
+    name: str
+    version: str
+    vendor: str
+    cves: list[CveInfo]
+    paths: set[str]
+    registryPaths: set[str]
+    max_cvss: float
+    severities: list[str]
+
+
 class ProductsResult(TypedDict, total=False):
     """Extended result returned by ProductsService."""
 
@@ -108,6 +128,14 @@ class ProductsResult(TypedDict, total=False):
     low_count: int
     total_cves: int
     total_software: int
+    # Path verification (products --verify-paths). raw_value is the score before any
+    # stale entry was taken out: it stays graphed so the curve does not lie by omission.
+    raw_value: int
+    stale_value: int
+    stale_count: int
+    unverified_count: int
+    verify_error: str
+    metrics: list[tuple[str, int]]
 
 
 # ---------------------------------------------------------------------------
