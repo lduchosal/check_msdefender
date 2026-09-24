@@ -6,6 +6,8 @@ from typing import Any
 
 import nagiosplugin
 
+from check_msdefender.core.exceptions import CheckMSDefenderError
+
 
 class DefenderScalarContext(nagiosplugin.ScalarContext):
     """Custom scalar context with modified threshold logic for detail command."""
@@ -158,6 +160,11 @@ class NagiosPlugin:
             print(str(runtime.output), end="")
             return int(runtime.exitcode)
 
+        except CheckMSDefenderError as e:
+            # An anticipated failure (API down, host unknown, bad config) already
+            # carries a one-line explanation; a stack trace would only bury it.
+            print(f"UNKNOWN: {e}")
+            return 3
         except Exception as e:  # noqa: BLE001
             print(f"UNKNOWN: {e}\n{traceback.format_exc()}")
             return 3

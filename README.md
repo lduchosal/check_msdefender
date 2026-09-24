@@ -224,6 +224,15 @@ private_key_path = /path/to/private_key.pem
 timeout = 30
 ```
 
+#### Transient API errors
+
+Throttling (429) and transient server errors (500/502/503/504) are retried up to
+3 attempts with backoff, honouring `Retry-After` capped at 5 s, so a passing
+Microsoft outage no longer turns into an UNKNOWN that lasts until the next retry.
+Timeouts are not retried, to keep the check inside Nagios' `service_check_timeout`.
+Once the retries are spent the check reports a single line, e.g.
+`UNKNOWN: MS Defender API 503 Service Unavailable after 3 attempts: GET …`.
+
 ### Microsoft Defender API Setup
 
 1. **Register Application** in Azure Active Directory

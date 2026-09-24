@@ -33,6 +33,13 @@ de `[settings]`) et délègue au service via `NagiosPlugin`.
 - `auth.py` — credentials Azure AD (client secret ou certificat).
 - `defender.py` — `DefenderClient`, client HTTP de l'API Defender
   (machines, alertes paginées OData, vulnérabilités TVM, produits).
+  Une `requests.Session` rejoue les réponses transitoires (429/500/502/
+  503/504) : 3 tentatives, backoff 0 s puis 4 s, `Retry-After` respecté
+  mais plafonné à 5 s, soit ≤ 10 s d'attente par appel, pour tenir dans
+  le `service_check_timeout` Nagios même à deux appels. Les timeouts et
+  erreurs de connexion ne sont pas rejoués (30 s chacun ferait exploser
+  ce budget). L'échec résiduel devient une `DefenderAPIError` d'une ligne
+  (`MS Defender API 503 … after 3 attempts: GET …`).
 - `path_probe.py` — `CommandPathProbe`, l'oracle « ce chemin
   existe-t-il encore sur l'hôte ? » : une commande configurable
   (`[verify] command`, gabarit `{host}`, lancée sans shell), les chemins

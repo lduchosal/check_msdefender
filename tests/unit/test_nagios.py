@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import nagiosplugin
 import pytest
 
+from check_msdefender.core.exceptions import DefenderAPIError
 from check_msdefender.core.nagios import DefenderScalarContext, NagiosPlugin
 
 
@@ -156,3 +157,33 @@ class TestExtraPerfdataMetrics:
         assert code == 0
         assert "| products=5;500;2000" in output
         assert "raw=" not in output
+
+
+class TestErrorOutput:
+    """API failures print one clean line; tracebacks stay for real bugs (ken #1121)."""
+
+    def test_expected_error_prints_single_line(self, capsys):
+        """A DefenderAPIError is reported as one UNKNOWN line, no stack trace."""
+        service = Mock()
+        service.get_result.side_effect = DefenderAPIError(
+            "MS Defender API 503 Service Unavailable after 3 attempts: GET https://x/api"
+        )
+
+        code = NagiosPlugin(service, "alerts").check(dns_name="host")
+
+        out = capsys.readouterr().out
+        assert code == 3
+        assert out == (
+            "UNKNOWN: MS Defender API 503 Service Unavailable after 3 attempts: "
+            "GET https://x/api\n"
+        )
+
+    def test_unexpected_error_keeps_traceback(self, capsys):
+        """An unanticipated exception still dumps its traceback for debugging."""
+        service = Mock()
+        service.get_result.side_effect = KeyError("value")
+
+        code = NagiosPlugin(service, "alerts").check(dns_name="host")
+
+        assert code == 3
+        assert "Traceback" in capsys.readouterr().out
