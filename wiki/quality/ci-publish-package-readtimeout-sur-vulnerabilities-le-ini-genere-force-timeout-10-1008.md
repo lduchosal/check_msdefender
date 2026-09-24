@@ -4,6 +4,7 @@ title: "CI / Publish Package: ReadTimeout sur vulnerabilities — le ini génér
 status: done
 who: "Claude"
 due_date: 
+updated_at: 2026-08-10T17:53:59
 classified_at: 2026-08-10T17:48:39
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: quality

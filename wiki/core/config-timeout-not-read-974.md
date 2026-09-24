@@ -4,6 +4,7 @@ title: "CONFIG / TIMEOUT / not read"
 status: done
 who: "Claude"
 due_date: 
+updated_at: 2026-07-07T14:21:58
 classified_at: 2026-07-07T14:22:59
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: core

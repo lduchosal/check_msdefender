@@ -4,6 +4,7 @@ title: "Fix 11 open SonarCloud code smells"
 status: done
 who: ""
 due_date: 
+updated_at: 2026-07-02T07:44:31
 classified_at: 2026-07-07T14:22:57
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: quality

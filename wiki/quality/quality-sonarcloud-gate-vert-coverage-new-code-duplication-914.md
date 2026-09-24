@@ -4,6 +4,7 @@ title: "QUALITY / SonarCloud gate vert (coverage new code + duplication)"
 status: done
 who: "Claude"
 due_date: 
+updated_at: 2026-06-28T16:04:40
 classified_at: 2026-07-07T14:22:56
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: quality

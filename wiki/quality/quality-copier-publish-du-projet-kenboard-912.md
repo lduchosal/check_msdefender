@@ -4,6 +4,7 @@ title: "QUALITY / copier publish du projet kenboard"
 status: done
 who: "Claude"
 due_date: 
+updated_at: 2026-06-28T16:04:39
 classified_at: 2026-07-07T14:22:54
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: quality

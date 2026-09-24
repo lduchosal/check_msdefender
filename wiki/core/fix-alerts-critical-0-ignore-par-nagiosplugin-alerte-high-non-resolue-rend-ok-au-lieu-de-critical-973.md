@@ -4,6 +4,7 @@ title: "fix(alerts): critical=0 ignoré par nagiosplugin — alerte High non ré
 status: done
 who: ""
 due_date: 
+updated_at: 2026-07-07T08:25:01
 classified_at: 2026-07-07T14:22:58
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: core
