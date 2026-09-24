@@ -169,6 +169,9 @@ def api_server():
         server.script = list(script)
         client = _make_client()
         client.base_url = f"http://127.0.0.1:{server.server_port}"
+        # The fake API speaks plain HTTP: give it the retrying adapter the client
+        # only mounts for https://.
+        client.session.mount("http://", client.session.get_adapter("https://x"))
         return client, server
 
     yield serve

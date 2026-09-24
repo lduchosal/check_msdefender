@@ -60,8 +60,8 @@ def _build_session() -> requests.Session:
         raise_on_status=False,
     )
     session = requests.Session()
+    # The Defender endpoints are HTTPS only; plain HTTP gets no retrying adapter.
     session.mount("https://", HTTPAdapter(max_retries=retry))
-    session.mount("http://", HTTPAdapter(max_retries=retry))
     return session
 
 
