@@ -186,6 +186,38 @@ class TestProductsVerifier:
 
         assert probe.probe.call_args[0][1] == ["c:\\a.dll", "c:\\b.dll"]
 
+    def test_every_submitted_path_keeps_its_verdict(self):
+        """The output annotates each path, so the outcome carries every answer."""
+        software = {"k": _entry(paths=["c:\\a.dll", "c:\\b.dll", "c:\\c.dll"])}
+        verdicts = {
+            "c:\\a.dll": PathVerdict(PathState.PRESENT, "3.0.15"),
+            "c:\\b.dll": PathVerdict(PathState.ABSENT),
+        }
+
+        outcome = ProductsVerifier(_probe(verdicts)).verify("h", software)
+
+        assert outcome.verdicts == {
+            "c:\\a.dll": PathVerdict(PathState.PRESENT, "3.0.15"),
+            "c:\\b.dll": PathVerdict(PathState.ABSENT),
+            "c:\\c.dll": PathVerdict(PathState.ERROR),
+        }
+        assert outcome.absent == 1
+        assert outcome.unreadable == 1
+
+    def test_one_surviving_copy_keeps_the_product_among_absent_ones(self):
+        """Five copies gone and one left is still a binary on disk, not a stale entry."""
+        gone = [f"c:\\x{index}\\python.exe" for index in range(5)]
+        software = {
+            "k": _entry(version="3.12.9.0", paths=[*gone, "c:\\arm\\python.exe"])
+        }
+        verdicts = {path: PathVerdict(PathState.ABSENT) for path in gone}
+        verdicts["c:\\arm\\python.exe"] = PathVerdict(PathState.PRESENT, "3.12.9")
+
+        outcome = ProductsVerifier(_probe(verdicts)).verify("h", software)
+
+        assert outcome.stale == {}
+        assert outcome.absent == 5
+
 
 class TestVerifierHostOverride:
     """

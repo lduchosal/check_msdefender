@@ -40,13 +40,36 @@ def _no_stale() -> dict[str, StaleEntry]:
     return {}
 
 
+def _no_verdicts() -> dict[str, PathVerdict]:
+    """Return the empty verdict mapping used as the outcome's default."""
+    return {}
+
+
 @dataclass
 class VerificationOutcome:
-    """What the host answered about a machine's reported software."""
+    """
+    What the host answered about a machine's reported software.
+
+    verdicts holds one answer per path submitted to the host -- a path the probe left unanswered is
+    recorded as ERROR -- so the output can show, next to each path, what the host said about it.
+    """
 
     stale: dict[str, StaleEntry] = field(default_factory=_no_stale)
     unverified: int = 0
     error: str | None = None
+    verdicts: dict[str, PathVerdict] = field(default_factory=_no_verdicts)
+
+    @property
+    def absent(self) -> int:
+        """Return how many submitted paths the host reported as gone."""
+        return sum(
+            verdict.state is PathState.ABSENT for verdict in self.verdicts.values()
+        )
+
+    @property
+    def unreadable(self) -> int:
+        """Return how many submitted paths the host could not answer for."""
+        return sum(verdict.state in _UNDECIDED for verdict in self.verdicts.values())
 
 
 class PathProbeProtocol(Protocol):
@@ -106,7 +129,10 @@ class ProductsVerifier:
         except PathProbeError as exc:
             self.logger.info(f"Path verification unavailable: {exc}")
             return VerificationOutcome(unverified=len(software), error=str(exc))
-        return self._classify_all(software, verdicts)
+        answered = {
+            path: verdicts.get(path, PathVerdict(PathState.ERROR)) for path in paths
+        }
+        return self._classify_all(software, answered)
 
     def _classify_all(
         self,
@@ -114,7 +140,7 @@ class ProductsVerifier:
         verdicts: dict[str, PathVerdict],
     ) -> VerificationOutcome:
         """Classify every software entry against the verdicts the host returned."""
-        outcome = VerificationOutcome()
+        outcome = VerificationOutcome(verdicts=verdicts)
         for key, entry in software.items():
             stale, decided = _classify(entry, verdicts)
             if not decided:

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from itertools import starmap
-
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import (
     CveInfo,
@@ -12,6 +10,7 @@ from check_msdefender.core.models import (
     ProductVulnerabilityDict,
     SoftwareEntry,
 )
+from check_msdefender.core.path_probe import PathState, PathVerdict
 from check_msdefender.services.machine_resolver import resolve_machine
 from check_msdefender.services.products_verifier import (
     ProductsVerifier,
@@ -30,6 +29,17 @@ _SEVERITY_SCORES: dict[str, int] = {
 # perfdata always count every product.
 _TOP_PRODUCTS = 10
 _TOP_STALE = 10
+_TOP_PATHS = 4
+
+# Order in which a product's paths are listed once the host has answered: the paths that
+# keep the product in the score come first, so the one the operator reads is the one
+# that decided.
+_PATH_ORDER: dict[PathState, int] = {
+    PathState.PRESENT: 0,
+    PathState.DENIED: 1,
+    PathState.ERROR: 1,
+    PathState.ABSENT: 2,
+}
 
 
 class DetailObject:
@@ -102,8 +112,12 @@ class ProductsService:
     ) -> ProductsResult:
         """Assemble the result from the grouped software and the host's verdicts."""
         stale_keys: set[str] = set(outcome.stale) if outcome else set()
+        verdicts = outcome.verdicts if outcome else None
         detail_objects = sorted(
-            starmap(self._build_detail_object, software_vulnerabilities.items()),
+            (
+                self._build_detail_object(key, software, verdicts)
+                for key, software in software_vulnerabilities.items()
+            ),
             key=lambda detail_object: detail_object.score,
             reverse=True,
         )
@@ -250,7 +264,12 @@ class ProductsService:
             )
         if outcome.unverified:
             summary += f", {outcome.unverified} unverified"
-        return summary
+        # Always said, even when nothing was excluded: otherwise a verified check reads
+        # exactly like one that never asked the host.
+        return (
+            f"{summary}, path verification: {len(outcome.verdicts)} paths, "
+            f"{outcome.absent} absent, {outcome.unreadable} unreadable"
+        )
 
     @staticmethod
     def _stale_lines(
@@ -271,8 +290,13 @@ class ProductsService:
             lines.append(f" - .. (+{len(stale) - _TOP_STALE} more)")
         return lines
 
-    @staticmethod
-    def _build_detail_object(key: str, software: SoftwareEntry) -> DetailObject:
+    @classmethod
+    def _build_detail_object(
+        cls,
+        key: str,
+        software: SoftwareEntry,
+        verdicts: dict[str, PathVerdict] | None = None,
+    ) -> DetailObject:
         """Build a single software detail entry with its score and paths."""
         cve_count = len(software["cves"])
         unique_cves = list({cve["cve_id"] for cve in software["cves"]})
@@ -308,18 +332,35 @@ class ProductsService:
             score=score,
         )
 
-        # Add paths (limit to 4)
-        paths_list = list(software["paths"])
-        for path in paths_list[:4]:
-            detail_object.paths.append(f" - {path}")
-        if len(paths_list) > 4:
-            detail_object.paths.append(f" - .. (+{len(paths_list) - 4} more)")
-
-        # Add registry paths if available (limit to 4)
-        registry_list = list(software["registryPaths"])
-        for registry_path in registry_list[:4]:
-            detail_object.paths.append(f" - {registry_path}")
-        if len(registry_list) > 4:
-            detail_object.paths.append(f" - .. (+{len(registry_list) - 4} more)")
-
+        detail_object.paths.extend(cls._path_lines(software["paths"], verdicts))
+        detail_object.paths.extend(cls._path_lines(software["registryPaths"], verdicts))
         return detail_object
+
+    @staticmethod
+    def _path_lines(
+        paths: set[str], verdicts: dict[str, PathVerdict] | None
+    ) -> list[str]:
+        """List the first paths of a product, each with what the host said about it."""
+        if verdicts is None:
+            ordered = sorted(paths)
+            lines = [f" - {path}" for path in ordered[:_TOP_PATHS]]
+        else:
+            answered = sorted(
+                (path, verdicts.get(path, PathVerdict(PathState.ERROR)))
+                for path in paths
+            )
+            answered.sort(key=lambda item: _PATH_ORDER[item[1].state])
+            lines = [
+                f" - [{_verdict_label(verdict)}] {path}"
+                for path, verdict in answered[:_TOP_PATHS]
+            ]
+        if len(paths) > _TOP_PATHS:
+            lines.append(f" - .. (+{len(paths) - _TOP_PATHS} more)")
+        return lines
+
+
+def _verdict_label(verdict: PathVerdict) -> str:
+    """Return the host's answer for one path, with the version it read when it read one."""
+    if verdict.state is PathState.PRESENT and verdict.version:
+        return f"PRESENT {verdict.version}"
+    return verdict.state.value

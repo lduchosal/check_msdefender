@@ -116,6 +116,23 @@ Everything the host cannot answer for keeps its score: a path that could not be 
 probe that failed altogether. **A failed probe never turns the check green** - the raw
 score is what gets compared to the thresholds, and the output says so.
 
+The rule is per product, not per path: one copy still on disk in the reported version
+keeps the whole product counted, however many other copies are gone. A leftover binary
+that exists but can never run (another CPU architecture, say) is an exception to
+register, not a stale entry.
+
+The first line always says that the host was asked, even when nothing was excluded, and
+every path listed under a product carries the host's answer, the paths that keep it in
+the score first:
+
+```
+2 vulnerable products, score: 547 (raw 712, 1 stale excluded: 165), path verification: 27 paths, 5 absent, 0 unreadable
+
+python 3.12.9.0 (python) - Score: 442, ...
+ - [PRESENT 3.12.9] c:\program files\...\rust-lldb\win\aarch64\bin\python.exe
+ - [ABSENT] c:\program files\...\rust-lldb\win\x64\bin\python.exe
+```
+
 Excluded products stay visible under `Stale entries excluded`, with the reason and the
 path that decided it, and the perfdata keeps the raw curve:
 

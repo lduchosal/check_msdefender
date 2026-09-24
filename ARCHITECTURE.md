@@ -58,7 +58,10 @@ sort du score que si l'hôte ne la confirme plus **sans ambiguïté**
 Chemin illisible, sonde en échec, entrée sans chemin ⇒ produit compté.
 Le score brut, ce qui a été retiré et le nombre de non-vérifiés partent
 en perfdata (`raw`/`stale`/`unverified`) à côté du score comparé aux
-seuils.
+seuils. La sortie annonce toujours la vérification
+(`path verification: N paths, A absent, U unreadable`) et annote chaque
+chemin affiché du verdict de la sonde, les `PRESENT` en tête : le chemin
+lu est celui qui maintient le produit au score.
 
 ## Quality & Release
 

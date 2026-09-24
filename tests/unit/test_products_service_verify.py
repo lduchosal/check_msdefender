@@ -2,6 +2,7 @@
 
 from unittest.mock import Mock
 
+from check_msdefender.core.path_probe import PathState, PathVerdict
 from check_msdefender.services.products_service import ProductsService
 from check_msdefender.services.products_verifier import StaleEntry, VerificationOutcome
 
@@ -78,8 +79,74 @@ class TestProductsServiceVerification:
 
         assert details[0] == (
             "1 vulnerable products, score: 5 (raw 105, 1 stale excluded: 100), "
-            "2 unverified"
+            "2 unverified, path verification: 0 paths, 0 absent, 0 unreadable"
         )
+
+    def test_summary_line_says_the_probe_ran_even_when_nothing_is_excluded(self):
+        """A verified check that retires nothing must not read like an unverified one."""
+        outcome = VerificationOutcome(
+            verdicts={
+                "d:\\gone\\python.exe": PathVerdict(PathState.PRESENT, "3.7.9"),
+                "c:\\rider\\libcrypto-3.dll": PathVerdict(PathState.DENIED),
+                "c:\\old\\libcrypto-3.dll": PathVerdict(PathState.ABSENT),
+            }
+        )
+
+        details = _service(outcome).get_result(machine_id="m1")["details"]
+
+        assert details[0] == (
+            "2 vulnerable products, score: 105, "
+            "path verification: 3 paths, 1 absent, 1 unreadable"
+        )
+
+    def test_paths_carry_the_verdict_with_the_present_ones_first(self):
+        """The path that keeps a product in the score is the one listed first."""
+        paths = [
+            "c:\\rider\\x64\\python.exe",
+            "c:\\rider\\x86\\pythonw.exe",
+            "c:\\rider\\aarch64\\python.exe",
+            "c:\\denied\\python.exe",
+        ]
+        record = _CRITICAL | {"diskPaths": paths}
+        outcome = VerificationOutcome(
+            verdicts={
+                paths[0]: PathVerdict(PathState.ABSENT),
+                paths[1]: PathVerdict(PathState.ABSENT),
+                paths[2]: PathVerdict(PathState.PRESENT, "3.12.9"),
+                paths[3]: PathVerdict(PathState.DENIED),
+            }
+        )
+        client = Mock()
+        client.get_machine_by_id.return_value = {"computerDnsName": "q.arcantel.ch"}
+        client.get_products.return_value = {"value": [record]}
+
+        details = ProductsService(client, verifier=_verifier(outcome)).get_result(
+            machine_id="m1"
+        )["details"]
+
+        assert details[3:7] == [
+            " - [PRESENT 3.12.9] c:\\rider\\aarch64\\python.exe",
+            " - [DENIED] c:\\denied\\python.exe",
+            " - [ABSENT] c:\\rider\\x64\\python.exe",
+            " - [ABSENT] c:\\rider\\x86\\pythonw.exe",
+        ]
+
+    def test_path_list_is_truncated_after_the_ordering(self):
+        """Beyond four paths the absent ones are the ones folded away."""
+        paths = [f"c:\\gone{index}\\python.exe" for index in range(5)]
+        record = _CRITICAL | {"diskPaths": [*paths, "c:\\z\\python.exe"]}
+        verdicts = {path: PathVerdict(PathState.ABSENT) for path in paths}
+        verdicts["c:\\z\\python.exe"] = PathVerdict(PathState.PRESENT)
+        client = Mock()
+        client.get_machine_by_id.return_value = {"computerDnsName": "q.arcantel.ch"}
+        client.get_products.return_value = {"value": [record]}
+
+        details = ProductsService(
+            client, verifier=_verifier(VerificationOutcome(verdicts=verdicts))
+        ).get_result(machine_id="m1")["details"]
+
+        assert details[3] == " - [PRESENT] c:\\z\\python.exe"
+        assert details[7] == " - .. (+2 more)"
 
     def test_excluded_products_stay_visible_with_their_reason(self):
         """Masked, not deleted: the operator must be able to audit what was dropped."""
@@ -142,5 +209,6 @@ class TestProductsServiceVerification:
 
         assert result["value"] == 105
         assert result["details"][0] == "2 vulnerable products, score: 105"
+        assert "d:\\gone\\python.exe" in result["details"][3]
         assert "metrics" not in result
         assert "raw_value" not in result
