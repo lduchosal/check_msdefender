@@ -123,12 +123,7 @@ class DefenderClient:
         return endpoints.get(region, endpoints["eu"])
 
     def get_machine_by_dns_name(self, dns_name: str) -> MachineListResponse:
-        """
-        Get machine information by DNS name.
-
-        Raises:
-            DefenderAPIError: If the Microsoft Defender API request fails.
-        """
+        """Get machine information by DNS name."""
         self.logger.method_entry("get_machine_by_dns_name", dns_name=dns_name)
 
         token = self._get_token()
@@ -148,12 +143,7 @@ class DefenderClient:
         return result
 
     def get_machine_by_id(self, machine_id: str) -> MachineDict:
-        """
-        Get machine information by machine ID.
-
-        Raises:
-            DefenderAPIError: If the Microsoft Defender API request fails.
-        """
+        """Get machine information by machine ID."""
         self.logger.method_entry("get_machine_by_id", machine_id=machine_id)
 
         token = self._get_token()
@@ -171,12 +161,7 @@ class DefenderClient:
         return result
 
     def get_machine_vulnerabilities(self, machine_id: str) -> VulnerabilityListResponse:
-        """
-        Get vulnerabilities for a machine.
-
-        Raises:
-            DefenderAPIError: If the Microsoft Defender API request fails.
-        """
+        """Get vulnerabilities for a machine."""
         self.logger.method_entry("get_machine_vulnerabilities", machine_id=machine_id)
 
         token = self._get_token()
@@ -194,12 +179,7 @@ class DefenderClient:
         return result
 
     def list_machines(self) -> MachineListResponse:
-        """
-        Get list of all machines.
-
-        Raises:
-            DefenderAPIError: If the Microsoft Defender API request fails.
-        """
+        """Get list of all machines."""
         self.logger.method_entry("list_machines")
 
         token = self._get_token()
@@ -287,12 +267,7 @@ class DefenderClient:
         return result
 
     def get_products(self) -> ProductListResponse:
-        """
-        Get installed products for a machine.
-
-        Raises:
-            DefenderAPIError: If the Microsoft Defender API request fails.
-        """
+        """Get installed products for a machine."""
         self.logger.method_entry("get_products")
 
         token = self._get_token()
