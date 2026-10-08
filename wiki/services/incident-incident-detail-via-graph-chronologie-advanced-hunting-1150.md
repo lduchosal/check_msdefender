@@ -1,10 +1,10 @@
 ---
 id: 1150
 title: "INCIDENT / incident-detail via Graph + chronologie Advanced Hunting"
-status: review
+status: done
 who: "Claude"
 due_date: 
-updated_at: 2026-10-08T10:51:52
+updated_at: 2026-10-08T11:37:58
 classified_at: 2026-10-08T10:51:53
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: services
@@ -13,7 +13,7 @@ section_title: "Services"
 
 # #1150 — INCIDENT / incident-detail via Graph + chronologie Advanced Hunting
 
-**TL;DR** — Les permissions Graph `SecurityIncident.Read.All` et `ThreatHunting.Read.All` sont accordées. `incident-detail` lit désormais l'incident sur Graph (en-tête, verdicts et remédiation des preuves, liens vers le portail) et y ajoute une chronologie Advanced Hunting qui remplace l'histoire d'attaque, avec repli sur l'API alertes MDE. Les permissions Azure sont documentées dans le README.
+**TL;DR** — `incident-detail` ne voyait que l'API alertes MDE (ni en-tête d'incident, ni verdicts, ni histoire d'attaque) → lecture de l'incident sur Graph (`SecurityIncident.Read.All`) et chronologie Advanced Hunting (`ThreatHunting.Read.All`) en remplacement de l'histoire d'attaque, repli MDE, permissions Azure documentées ; publié en 1.4.24.
 
 ## Besoin
 Suite de #1149. Les permissions Graph `SecurityIncident.Read.All` et `ThreatHunting.Read.All` sont accordées (vérifié le 2026-10-08). Faire de `incident-detail` un rapport aussi complet que le portail, histoire d'attaque comprise.
@@ -63,6 +63,10 @@ Suite de #1149. Les permissions Graph `SecurityIncident.Read.All` et `ThreatHunt
 
 ### Limite
 - L'onglet « Activité » (historique statut/classification) n'est exposé par aucune API ; le rapport le dit.
+
+### Correctif post-review
+- CI rouge sous Python 3.10 : `parse_time` comptait les chiffres du décalage horaire (`+00:00`) comme fractions de seconde (décalage perdu ; Python 3.10 n'accepte que 3 ou 6 décimales). La fraction est désormais isolée par regex et ramenée à 6 chiffres ; test ajouté pour un fuseau non UTC ; suite complète validée sous 3.10 (commit `5006310`).
+- Publié en **1.4.24** (tag `check-msdefender-1.4.24`).
 ---
 
 [← retour à services](index.md) · [voir log](../log/2026-10-08.md)

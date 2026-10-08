@@ -1,10 +1,10 @@
 ---
 id: 1149
 title: "INCIDENT / Détail d'un incident"
-status: review
+status: done
 who: "Claude"
 due_date: 
-updated_at: 2026-10-08T09:27:50
+updated_at: 2026-10-08T11:37:57
 classified_at: 2026-10-08T09:27:55
 classified_by: "key:7fb06ba1-e6a3-42cd-bb9b-f5170d50c484"
 section: services
@@ -66,6 +66,9 @@ Pour un incident donné (id), rassembler :
 ### Limites (permissions de l'app)
 - `/api/alerts/{id}/user|files|ips|domains` → 403 : manquent `User.Read.All`, `File.Read.All`, `Ip.Read.All`, `URL.Read.All` (les preuves couvrent déjà l'essentiel).
 - Onglets portail « activité », « résumé », « histoire d'attaque » : API incidents (`/api/incidents`, Graph `security/incidents`) → 403 ; nécessite `Incident.Read.All` / `SecurityIncident.Read.All`. Suite possible si la permission est accordée.
+
+### Publication
+- Publié en **1.4.23** (tag `check-msdefender-1.4.23`), après correction de 3 remarques refurb ; étendu par #1150 (1.4.24).
 ---
 
 [← retour à services](index.md) · [voir log](../log/2026-10-08.md)
