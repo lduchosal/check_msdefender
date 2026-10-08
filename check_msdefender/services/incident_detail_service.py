@@ -1,136 +1,108 @@
-"""Incident detail service: gather everything known about one incident into a text report."""
+"""Incident detail service: gather everything known about one incident."""
 
 from __future__ import annotations
 
-import json
 import re
-from typing import Any, cast
+from typing import Any, Protocol
 
 from check_msdefender.core.exceptions import DefenderAPIError, ValidationError
 from check_msdefender.core.logging_config import get_verbose_logger
 from check_msdefender.core.models import DefenderClientProtocol
-
-# Entities exposed under /api/alerts/{id}/<entity>, in report order. The machine is not
-# among them: it is fetched once per incident, not once per alert.
-RELATED_ENTITIES = ("user", "files", "ips", "domains")
-
-# Evidence fields that identify an entity. The same file, process or account is attached to
-# every alert that saw it; these fields tell two copies apart, so the incident lists each
-# entity once, as the portal does. Left out on purpose: evidenceCreationTime (differs per
-# alert) and attributes one copy may lack while the other has them (hashes, SID, AAD id) --
-# the merge fills those in instead.
-_EVIDENCE_IDENTITY_FIELDS = (
-    "entityType",
-    "fileName",
-    "filePath",
-    "processId",
-    "processCreationTime",
-    "ipAddress",
-    "url",
-    "registryKey",
-    "registryValueName",
-    "accountName",
-    "domainName",
+from check_msdefender.services.incident_report import (
+    RELATED_ENTITIES,
+    as_dict,
+    as_list,
+    pick,
+    render_report,
+)
+from check_msdefender.services.incident_timeline import (
+    HuntingClientProtocol,
+    TimelineBuilder,
+    TimelineRequest,
+    parse_time,
+    window,
 )
 
-# Alert fields rendered first, in this order; every other field follows them.
-_ALERT_KEY_FIELDS = (
-    "id",
-    "title",
-    "severity",
-    "status",
-    "classification",
-    "determination",
-    "category",
-    "detectionSource",
-    "threatFamilyName",
-    "threatName",
-    "mitreTechniques",
-    "computerDnsName",
-    "machineId",
-    "relatedUser",
-    "alertCreationTime",
-    "firstEventTime",
-    "lastEventTime",
-    "lastUpdateTime",
-    "resolvedTime",
-    "investigationId",
-    "investigationState",
-    "assignedTo",
-    "description",
-    "recommendedAction",
-)
-
-# Fields kept out of the generic alert dump: rendered in their own section or noise.
-_ALERT_SKIPPED_FIELDS = {"evidence", "comments", "incidentId", "aadTenantId"}
+# Graph evidence nests the file, image and account of an entity; their fields are lifted to
+# the top level (under these prefixes) so both APIs render and deduplicate the same way.
+_GRAPH_NESTED_PREFIXES = {
+    "fileDetails": "",
+    "imageFile": "",
+    "userAccount": "",
+    "parentProcessImageFile": "parentProcess",
+}
 
 # A GUID is what people paste from the portal URL bar; it is never an incidentId.
 _GUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
 )
 
-_RULE = "=" * 78
 
-# What the alerts API cannot see; said in the report so a reader does not assume absence.
-_NOT_COVERED = (
-    "Not covered (needs the incidents API, Incident.Read.All / SecurityIncident.Read.All): "
-    "incident activity log, attack story, incident-level classification and tags."
-)
-
-
-def _is_empty(value: Any) -> bool:
-    """Tell whether an API value carries no information (None, "", [], {})."""
-    return value is None or value in ("", [], {})
-
-
-def _as_dict(value: Any) -> dict[str, Any] | None:
-    """Return ``value`` as a JSON object, or None when it is something else."""
-    return cast("dict[str, Any]", value) if isinstance(value, dict) else None
-
-
-def _as_list(value: Any) -> list[Any]:
-    """Return ``value`` as a JSON array, or an empty list when it is something else."""
-    return cast("list[Any]", value) if isinstance(value, list) else []
-
-
-def _format_value(value: Any) -> str:
-    """Render one API value on a single line (lists/dicts as compact JSON)."""
-    if isinstance(value, (dict, list)):
-        return json.dumps(value, ensure_ascii=False, sort_keys=True)
-    return str(value)
-
-
-def _format_fields(
-    record: dict[str, Any],
-    indent: str,
-    first: tuple[str, ...] = (),
-    skip: set[str] | frozenset[str] = frozenset(),
-) -> list[str]:
-    """Render every non-empty field of ``record`` as ``key: value`` lines."""
-    keys = [key for key in first if key in record]
-    keys += sorted(key for key in record if key not in first and key not in skip)
-    lines: list[str] = []
-    for key in keys:
-        value = record[key]
-        if _is_empty(value):
+def _flatten_graph_evidence(item: dict[str, Any]) -> dict[str, Any]:
+    """Reshape one Graph evidence like an MDE one: ``entityType`` from ``@odata.type``
+    (``#microsoft.graph.security.fileEvidence`` -> ``File``) and nested details lifted up.
+    """
+    kind = str(item.get("@odata.type", "")).rsplit(".", 1)[-1].removesuffix("Evidence")
+    flat: dict[str, Any] = {"entityType": kind[:1].upper() + kind[1:] or "Unknown"}
+    lifted: dict[str, Any] = {}
+    for key, value in item.items():
+        prefix = _GRAPH_NESTED_PREFIXES.get(key)
+        nested = as_dict(value)
+        if key == "@odata.type":
             continue
-        text = _format_value(value)
-        if "\n" in text:
-            lines.append(f"{indent}{key}:")
-            lines.extend(f"{indent}  | {line}" for line in text.splitlines())
-        else:
-            lines.append(f"{indent}{key}: {text}")
-    return lines
+        if prefix is None or nested is None:
+            flat[key] = value
+            continue
+        for sub_key, sub_value in nested.items():
+            name = prefix + sub_key[:1].upper() + sub_key[1:] if prefix else sub_key
+            lifted.setdefault(name, sub_value)
+    # Top-level fields win over lifted ones of the same name.
+    return lifted | flat
+
+
+def _machine_ids(alerts: list[dict[str, Any]]) -> list[str]:
+    """Return the MDE device ids of an incident, from its alerts (MDE) or evidence (Graph)."""
+    machine_ids: set[str] = set()
+    for alert in alerts:
+        if alert.get("machineId"):
+            machine_ids.add(str(alert["machineId"]))
+        for item in as_list(alert.get("evidence")):
+            device = (as_dict(item) or {}).get("mdeDeviceId")
+            if device:
+                machine_ids.add(str(device))
+    return sorted(machine_ids)
+
+
+class GraphClientProtocol(HuntingClientProtocol, Protocol):
+    """The Graph security calls the incident report needs."""
+
+    def get_security_incident(self, incident_id: int) -> dict[str, Any]:
+        """Get an incident with its alerts."""
+        ...
 
 
 class IncidentDetailService:
     """Collect an incident's alerts, evidence and related entities, and render them as text."""
 
     def __init__(
-        self, defender_client: DefenderClientProtocol, verbose_level: int = 0
+        self,
+        defender_client: DefenderClientProtocol,
+        verbose_level: int = 0,
+        graph_client: GraphClientProtocol | None = None,
+        window_minutes: int = 10,
+        timeline_limit: int = 500,
     ) -> None:
-        """Initialize with Defender client."""
+        """
+        Initialize with the Defender client and, optionally, the Graph client.
+
+        Without a Graph client the report comes from the MDE alerts API alone and has no timeline.
+        ``window_minutes`` widens the incident's activity span for the timeline; ``timeline_limit``
+        caps the events kept per hunting table (0 disables the timeline).
+        """
         self.defender = defender_client
+        self.graph = graph_client
+        self.window_minutes = window_minutes
+        self.timeline_limit = timeline_limit
         self.logger = get_verbose_logger(__name__, verbose_level)
 
     def resolve_incident_id(self, reference: str) -> int:
@@ -160,43 +132,127 @@ class IncidentDetailService:
 
     def collect(self, incident_id: int) -> dict[str, Any]:
         """
-        Gather the incident's alerts (with evidence), its machines and each alert's related
-        entities.
+        Gather the incident, its alerts (with evidence), its machines and its timeline.
 
-        A failure on a machine or related entity is recorded in the report instead of aborting
-        it: the point of the report is debugging, and a partial picture beats none.
+        The Graph incidents API is the main source; when it cannot be read the MDE alerts API
+        stands in, with each alert's related entities. A failure on any secondary call is
+        recorded in the report instead of aborting it: the point of the report is debugging,
+        and a partial picture beats none.
 
         Raises:
             ValidationError: If no alert belongs to the incident.
         """
         self.logger.method_entry("collect", incident_id=incident_id)
 
-        alerts = self.defender.get_incident_alerts(incident_id).get("value", [])
+        data: dict[str, Any] = {"incidentId": incident_id}
+        alerts = self._collect_alerts(incident_id, data)
         if not alerts:
             raise ValidationError(f"No alert found for incident {incident_id}")
-        alerts.sort(key=lambda alert: alert.get("alertCreationTime", ""))
+        alerts.sort(
+            key=lambda alert: str(pick(alert, "alertCreationTime", "createdDateTime"))
+        )
+        data["alerts"] = alerts
+        data["machines"] = {
+            mid: self._fetch_machine(mid) for mid in _machine_ids(alerts)
+        }
+        data["timeline"] = self._build_timeline(alerts)
 
-        machine_ids = sorted({mid for a in alerts if (mid := a.get("machineId"))})
-        machines = {mid: self._fetch_machine(mid) for mid in machine_ids}
+        self.logger.method_exit(
+            "collect", f"{len(alerts)} alert(s) from {data['source']}"
+        )
+        return data
 
+    def _collect_alerts(
+        self, incident_id: int, data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Read the alerts from Graph, or from MDE when Graph is unavailable; fill ``data``."""
+        incident = self._fetch_graph_incident(incident_id, data)
+        if incident is not None:
+            alerts = [dict(alert) for alert in as_list(incident.pop("alerts", []))]
+            for alert in alerts:
+                alert["evidence"] = [
+                    _flatten_graph_evidence(entity)
+                    for item in as_list(alert.get("evidence"))
+                    if (entity := as_dict(item)) is not None
+                ]
+            data.update(source="graph", incident=incident, related={})
+        else:
+            alerts = [
+                dict(alert)
+                for alert in self.defender.get_incident_alerts(incident_id).get(
+                    "value", []
+                )
+            ]
+            data.update(source="mde", related=self._fetch_all_related(alerts))
+        return alerts
+
+    def _fetch_graph_incident(
+        self, incident_id: int, data: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Fetch the Graph incident, or None (with the reason in ``data``) to fall back."""
+        if self.graph is None:
+            return None
+        try:
+            return dict(self.graph.get_security_incident(incident_id))
+        except DefenderAPIError as e:
+            self.logger.info(f"Graph incident unavailable, falling back to MDE: {e}")
+            data["graphError"] = str(e)
+            return None
+
+    def _fetch_all_related(
+        self, alerts: list[dict[str, Any]]
+    ) -> dict[str, dict[str, Any]]:
+        """Fetch the related entities of every alert (MDE only: Graph evidence has them)."""
         related: dict[str, dict[str, Any]] = {}
         for alert in alerts:
             alert_id = alert.get("id")
-            if not alert_id:
-                continue
-            related[alert_id] = {
-                entity: self._fetch_related(alert_id, entity)
-                for entity in RELATED_ENTITIES
-            }
+            if alert_id:
+                related[alert_id] = {
+                    entity: self._fetch_related(alert_id, entity)
+                    for entity in RELATED_ENTITIES
+                }
+        return related
 
-        data: dict[str, Any] = {
-            "incidentId": incident_id,
-            "alerts": alerts,
-            "machines": machines,
-            "related": related,
-        }
-        self.logger.method_exit("collect", f"{len(alerts)} alert(s)")
-        return data
+    def _build_timeline(self, alerts: list[dict[str, Any]]) -> dict[str, Any] | None:
+        """Build the Advanced Hunting timeline around the incident, or None when disabled."""
+        if self.graph is None or self.timeline_limit <= 0:
+            return None
+        times = [
+            moment
+            for alert in alerts
+            for key in (
+                "firstEventTime",
+                "firstActivityDateTime",
+                "lastEventTime",
+                "lastActivityDateTime",
+                "alertCreationTime",
+                "createdDateTime",
+            )
+            if (moment := parse_time(alert.get(key))) is not None
+        ]
+        if not times:
+            return {"error": "no activity time on the alerts"}
+        start, end = window(min(times), max(times), self.window_minutes)
+        request = TimelineRequest(start=start, end=end, limit=self.timeline_limit)
+        for alert in alerts:
+            alert_device = alert.get("machineId")
+            for item in as_list(alert.get("evidence")):
+                entity = as_dict(item) or {}
+                device = entity.get("mdeDeviceId") or alert_device
+                if device:
+                    request.devices.add(str(device))
+                if entity.get("entityType") == "Process" and device:
+                    for key in ("processId", "parentProcessId"):
+                        if isinstance(entity.get(key), int):
+                            request.seeds.add((str(device), entity[key]))
+                if entity.get("entityType") == "File" and entity.get("sha1"):
+                    request.sha1s.add(str(entity["sha1"]))
+            if alert_device:
+                request.devices.add(str(alert_device))
+        if not request.devices:
+            return {"error": "no device in the incident"}
+        assert self.graph is not None
+        return TimelineBuilder(self.graph).build(request)
 
     def _fetch_machine(self, machine_id: str) -> Any:
         """Fetch one machine, turning an API failure into an ``error`` record."""
@@ -213,192 +269,11 @@ class IncidentDetailService:
         except DefenderAPIError as e:
             self.logger.info(f"Related {entity} of {alert_id} unavailable: {e}")
             return {"error": str(e)}
-        record = _as_dict(result)
+        record = as_dict(result)
         if record is not None and "value" in record:
             return record["value"]
         return result
 
     def render(self, data: dict[str, Any]) -> str:
         """Render collected incident data as a structured plain-text report."""
-        records: list[dict[str, Any]] = [dict(alert) for alert in data["alerts"]]
-        evidence, references = self._merge_evidence(records)
-
-        lines: list[str] = [
-            _RULE,
-            f"INCIDENT {data['incidentId']}",
-            _RULE,
-            _NOT_COVERED,
-        ]
-        lines += self._render_summary(records, evidence)
-        lines += self._render_machines(data.get("machines", {}))
-        lines += self._render_evidence(evidence)
-
-        for index, record in enumerate(records, start=1):
-            lines += ["", _RULE, f"ALERT {index}/{len(records)}", _RULE]
-            lines += _format_fields(
-                record, "", first=_ALERT_KEY_FIELDS, skip=_ALERT_SKIPPED_FIELDS
-            )
-            numbers = references[index - 1]
-            listed = ", ".join(f"#{n}" for n in numbers) if numbers else "none"
-            lines.append(f"evidence: {listed}")
-            lines += self._render_comments(record.get("comments"))
-            lines += self._render_related(data["related"].get(record.get("id"), {}))
-
-        return "\n".join(lines) + "\n"
-
-    def _merge_evidence(
-        self, records: list[dict[str, Any]]
-    ) -> tuple[list[dict[str, Any]], list[list[int]]]:
-        """
-        Deduplicate the evidence of every alert into one incident-wide list.
-
-        Returns the merged entities (each with the ``alerts`` that cite it) and, per alert, the
-        1-based numbers of the entities it cites.
-        """
-        merged: dict[tuple[str, ...], dict[str, Any]] = {}
-        cited: list[list[tuple[str, ...]]] = []
-        for index, record in enumerate(records, start=1):
-            keys: list[tuple[str, ...]] = []
-            for item in _as_list(record.get("evidence")):
-                entity = _as_dict(item)
-                if entity is None:
-                    continue
-                key = tuple(
-                    _format_value(entity.get(field))
-                    for field in _EVIDENCE_IDENTITY_FIELDS
-                )
-                target = merged.setdefault(key, {"alerts": []})
-                for field, value in entity.items():
-                    if _is_empty(target.get(field)):
-                        target[field] = value
-                if index not in target["alerts"]:
-                    target["alerts"].append(index)
-                if key not in keys:
-                    keys.append(key)
-            cited.append(keys)
-
-        ordered = sorted(
-            merged.items(), key=lambda kv: str(kv[1].get("entityType", "Unknown"))
-        )
-        numbers = {key: number for number, (key, _) in enumerate(ordered, start=1)}
-        references = [sorted(numbers[key] for key in keys) for keys in cited]
-        return [entity for _, entity in ordered], references
-
-    def _render_summary(
-        self, records: list[dict[str, Any]], evidence: list[dict[str, Any]]
-    ) -> list[str]:
-        """Summarise the incident across its alerts (time span, machines, users, statuses)."""
-
-        def distinct(key: str) -> list[str]:
-            """Return the sorted distinct non-empty values of ``key`` across the alerts."""
-            values = {
-                _format_value(r[key]) for r in records if not _is_empty(r.get(key))
-            }
-            return sorted(values)
-
-        first_times = distinct("firstEventTime") or distinct("alertCreationTime")
-        last_times = distinct("lastEventTime") or distinct("alertCreationTime")
-        accounts: set[str] = set()
-        for entity in evidence:
-            if entity.get("accountName"):
-                parts = (entity.get("domainName"), entity["accountName"])
-                accounts.add("\\".join(str(part) for part in parts if part))
-        types: dict[str, int] = {}
-        for entity in evidence:
-            entity_type = str(entity.get("entityType", "Unknown"))
-            types[entity_type] = types.get(entity_type, 0) + 1
-
-        summary = {
-            "alerts": len(records),
-            "firstActivity": first_times[0] if first_times else None,
-            "lastActivity": last_times[-1] if last_times else None,
-            "severities": distinct("severity"),
-            "statuses": distinct("status"),
-            "classifications": distinct("classification"),
-            "determinations": distinct("determination"),
-            "categories": distinct("category"),
-            "detectionSources": distinct("detectionSource"),
-            "mitreTechniques": sorted(
-                {str(t) for r in records for t in _as_list(r.get("mitreTechniques"))}
-            ),
-            "machines": distinct("computerDnsName"),
-            "accounts": sorted(accounts),
-            "evidence": types,
-            "titles": [r.get("title", "Unknown alert") for r in records],
-        }
-        lines = _format_fields(summary, "", first=tuple(summary))
-        return ["", "SUMMARY", "-------", *lines]
-
-    def _render_machines(self, machines: dict[str, Any]) -> list[str]:
-        """Render the incident's machines (the devices of the portal's assets tab)."""
-        lines = ["", f"MACHINES ({len(machines)})", "--------"]
-        for machine_id, value in machines.items():
-            record = _as_dict(value) or {}
-            if set(record) == {"error"}:
-                lines.append(f"#{machine_id}: unavailable ({record['error']})")
-                continue
-            lines.append(f"#{machine_id}")
-            lines += _format_fields(
-                record, "  ", first=("computerDnsName",), skip={"id", "@odata.context"}
-            )
-        return lines
-
-    def _render_evidence(self, evidence: list[dict[str, Any]]) -> list[str]:
-        """Render the incident-wide evidence, numbered and grouped by entity type."""
-        lines = ["", f"EVIDENCE ({len(evidence)} distinct)", "--------"]
-        if not evidence:
-            return [*lines, "none"]
-        current = None
-        for number, entity in enumerate(evidence, start=1):
-            entity_type = str(entity.get("entityType", "Unknown"))
-            if entity_type != current:
-                current = entity_type
-                lines.append(f"[{entity_type}]")
-            lines.append(f"  #{number}")
-            lines += _format_fields(
-                entity, "    ", first=("alerts",), skip={"entityType"}
-            )
-        return lines
-
-    def _render_comments(self, comments: Any) -> list[str]:
-        """Render the analyst comments of an alert."""
-        entries = [_as_dict(item) for item in _as_list(comments)]
-        if not entries:
-            return []
-        lines = ["comments:"]
-        for comment in entries:
-            if comment is not None:
-                author = comment.get("createdBy", "?")
-                when = comment.get("createdTime", "?")
-                lines.append(f"  - [{when}] {author}: {comment.get('comment', '')}")
-        return lines
-
-    def _render_related(self, related: dict[str, Any]) -> list[str]:
-        """Render the entities fetched from /api/alerts/{id}/<entity>."""
-        lines: list[str] = []
-        for entity in RELATED_ENTITIES:
-            if entity not in related:
-                continue
-            value = related[entity]
-            record = _as_dict(value)
-            title = f"related {entity}"
-            if record is not None and set(record) == {"error"}:
-                lines.append(f"{title}: unavailable ({record['error']})")
-            elif _is_empty(value):
-                lines.append(f"{title}: none")
-            elif isinstance(value, list):
-                items = _as_list(value)
-                lines.append(f"{title} ({len(items)}):")
-                for number, item in enumerate(items, start=1):
-                    lines.append(f"  #{number}")
-                    item_record = _as_dict(item)
-                    if item_record is not None:
-                        lines += _format_fields(item_record, "    ")
-                    else:
-                        lines.append(f"    {_format_value(item)}")
-            elif record is not None:
-                lines.append(f"{title}:")
-                lines += _format_fields(record, "  ")
-            else:
-                lines.append(f"{title}: {_format_value(value)}")
-        return lines
+        return render_report(data)

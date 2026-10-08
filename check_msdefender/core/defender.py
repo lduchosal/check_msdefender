@@ -42,8 +42,8 @@ BACKOFF_FACTOR = 2.0
 RETRY_AFTER_MAX = 5
 
 
-def _build_session() -> requests.Session:
-    """Return a session that retries transient API failures with backoff."""
+def build_session(methods: frozenset[str] = frozenset({"GET"})) -> requests.Session:
+    """Return a session that retries transient API failures of ``methods`` with backoff."""
     retry = Retry(
         total=RETRY_ATTEMPTS - 1,
         connect=0,
@@ -51,7 +51,7 @@ def _build_session() -> requests.Session:
         other=0,
         status=RETRY_ATTEMPTS - 1,
         status_forcelist=RETRY_STATUSES,
-        allowed_methods=frozenset({"GET"}),
+        allowed_methods=methods,
         backoff_factor=BACKOFF_FACTOR,
         respect_retry_after_header=True,
         retry_after_max=RETRY_AFTER_MAX,
@@ -71,16 +71,18 @@ def _attempts(response: requests.Response) -> int:
     return len(retries.history) + 1 if isinstance(retries, Retry) else 1
 
 
-def _describe_failure(error: requests.RequestException) -> str:
-    """Render a failed API request as one Nagios-friendly line."""
+def describe_failure(
+    error: requests.RequestException, api: str = "MS Defender API", method: str = "GET"
+) -> str:
+    """Render a failed ``method`` request to ``api`` as one Nagios-friendly line."""
     response = error.response
     if response is None:
-        return f"MS Defender API request failed: {error}"
+        return f"{api} request failed: {error}"
     attempts = _attempts(response)
     plural = "attempt" if attempts == 1 else "attempts"
     return (
-        f"MS Defender API {response.status_code} {response.reason} "
-        f"after {attempts} {plural}: GET {unquote_plus(response.url)}"
+        f"{api} {response.status_code} {response.reason} "
+        f"after {attempts} {plural}: {method} {unquote_plus(response.url)}"
     )
 
 
@@ -110,7 +112,7 @@ class DefenderClient:
         self.region = region
         self.base_url = self._get_base_url(region)
         self.logger = get_verbose_logger(__name__, verbose_level)
-        self.session = _build_session()
+        self.session = build_session()
 
     def _get_base_url(self, region: str) -> str:
         """Get base URL for the specified region."""
@@ -372,7 +374,7 @@ class DefenderClient:
             self.logger.debug(f"API request failed: {e}")
             if e.response is not None:
                 self.logger.debug(f"Response: {e.response.content!r}")
-            raise DefenderAPIError(_describe_failure(e)) from e
+            raise DefenderAPIError(describe_failure(e)) from e
 
     def _get_token(self) -> str:
         """Get access token from authenticator."""

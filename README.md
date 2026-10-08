@@ -195,33 +195,46 @@ command:
 
 ### Incident Detail Report
 
-`incident-detail` is an analysis tool, not a check: it writes everything the alerts API knows
-about one incident as structured plain text, meant to be handed to a model or read while
-debugging.
+`incident-detail` is an analysis tool, not a check: it writes everything known about one
+incident as structured plain text, meant to be handed to a model or read while debugging. It
+needs the Graph permissions `SecurityIncident.Read.All` and `ThreatHunting.Read.All` for the
+full report (see [Required API permissions](#required-api-permissions)).
 
 ```bash
 check_msdefender incident-detail 199                      # report on stdout
 check_msdefender incident-detail 199 -o incident-199.txt  # report to a file
 check_msdefender incident-detail da8131a3..._1            # any alert id of the incident
 check_msdefender incident-detail 199 --json -o raw.json   # raw collected JSON
+check_msdefender incident-detail 199 --window 30          # wider timeline (minutes)
+check_msdefender incident-detail 199 --timeline-limit 0   # no timeline
+check_msdefender incident-detail 199 --no-graph           # WindowsDefenderATP API only
 ```
 
 - **Reference**: the integer incident id, or the id of any of its alerts. A GUID (tenant,
   machine or investigation id) is refused: Defender incident ids are integers.
+- **Incident** (Graph): title, severity, status, classification/determination, assignee,
+  priority score, resolving comment, tags, portal link, description.
 - **Summary**: time span, severities, statuses, classification, MITRE techniques, machines,
-  accounts, evidence counts by type.
+  accounts, evidence counts by type and by verdict/remediation status.
 - **Machines**: the full machine record of each device involved, fetched once.
-- **Evidence**: processes (command line, parent, PID, account, hashes), files, users, IPs, URLs,
-  registry keys, with detection status, **deduplicated across alerts** and numbered; each alert
-  lists the evidence numbers it cites.
+- **Evidence**: devices, processes (command line, parent, PID, account, hashes), files (hashes,
+  size, publisher), users, IPs, URLs, registry keys, with verdict, remediation and detection
+  status, **deduplicated across alerts** and numbered; each alert lists the evidence it cites.
 - **Alerts**: every populated field in chronological order (description and recommendation kept
-  whole), analyst comments, and the entities of `/api/alerts/{id}/user|files|ips|domains`.
+  whole, portal link), analyst comments; without Graph, the entities of
+  `/api/alerts/{id}/user|files|ips|domains`.
+- **Timeline** (Advanced Hunting, stands in for the portal's attack story): one line per event
+  over the incident's activity span widened by `--window` minutes (default 10). It follows the
+  evidence processes, their parents and up to three generations of children, and lists what
+  they did (processes, files, network, registry, DLL loads); files whose hash is in evidence,
+  logons and Defender's own events (antivirus, ASR...) are kept too. Each table is capped by
+  `--timeline-limit` (default 500) and the report says `first 500 of N` when it cuts.
 - **Resolved incidents are reported too**, unlike the checks.
 - A call the app is not allowed to make (HTTP 403) is written in the report as `unavailable`
-  instead of failing it. The `/files`, `/ips`, `/domains` and `/user` endpoints need
-  `File.Read.All`, `Ip.Read.All`, `URL.Read.All` and `User.Read.All`.
-- The incident activity log, attack story and incident-level tags are not in the alerts API;
-  they need the incidents API (`Incident.Read.All` / Graph `SecurityIncident.Read.All`).
+  instead of failing it; if the Graph incident cannot be read, the WindowsDefenderATP alerts API
+  stands in.
+- The incident activity log (status/classification history of the portal's *Activity* tab) is
+  exposed by no API and is not in the report.
 
 ### Onboarding Status Values
 
@@ -269,14 +282,40 @@ Once the retries are spent the check reports a single line, e.g.
 
 ### Microsoft Defender API Setup
 
-1. **Register Application** in Azure Active Directory
-2. **Grant API Permissions**:
-   - `Machine.Read.All`
-   - `Vulnerability.Read`
-   - `Vulnerability.Read.All`
-   - `Alert.Read.All`
-3. **Create Authentication** (Secret or Certificate)
+1. **Register Application** in Microsoft Entra ID (Azure AD) → *App registrations* → *New registration*
+2. **Grant API Permissions** (see below) → *API permissions* → *Add a permission*, always as
+   **Application permissions** (not delegated), then **Grant admin consent** for the tenant
+3. **Create Authentication** (Secret or Certificate) → *Certificates & secrets*
 4. **Note Credentials** (Client ID, Tenant ID, Secret/Certificate)
+
+#### Required API permissions
+
+All permissions are **Application** permissions, read-only, and need **admin consent**.
+
+**WindowsDefenderATP** (*APIs my organization uses* → `WindowsDefenderATP`) — every command:
+
+| Permission | Used by |
+|---|---|
+| `Machine.Read.All` | all commands (machine lookup), `onboarding`, `lastseen`, `machines`, `detail`, `incident-detail` (machines) |
+| `Vulnerability.Read.All` | `vulnerabilities`, `products` |
+| `Alert.Read.All` | `alerts`, `incidents`, `incident-detail` |
+
+**Microsoft Graph** (*Microsoft APIs* → *Microsoft Graph*) — `incident-detail` only:
+
+| Permission | Used by |
+|---|---|
+| `SecurityIncident.Read.All` | `incident-detail`: incident header (classification, assignee, priority, tags, portal link) and evidence verdicts / remediation status |
+| `ThreatHunting.Read.All` | `incident-detail`: device timeline from Advanced Hunting (the attack story) |
+
+Without the Graph permissions `incident-detail` still works from the WindowsDefenderATP alerts
+API, with neither incident header nor timeline; the report says what is missing.
+
+**Optional — WindowsDefenderATP**, only for the per-alert "related" entities `incident-detail`
+reads when Graph is unavailable (Graph evidence already carries them): `File.Read.All`,
+`Ip.Read.All`, `URL.Read.All`, `User.Read.All`. Missing ones show as `unavailable (403)`.
+
+Check what a token carries (the `roles` claim) after granting consent; new permissions can
+take a few minutes to reach freshly issued tokens.
 
 📚 [Complete API Setup Guide](https://learn.microsoft.com/en-us/defender-endpoint/api/api-hello-world)
 

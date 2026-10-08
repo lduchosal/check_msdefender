@@ -1,5 +1,6 @@
 """Unit tests for IncidentDetailService."""
 
+import copy
 from unittest.mock import Mock
 
 import pytest
@@ -234,7 +235,7 @@ class TestRender:
 
     def test_not_covered_note(self):
         """The report says what the alerts API cannot provide."""
-        assert "Not covered (needs the incidents API" in self.report
+        assert "Not covered (Graph incidents API unavailable" in self.report
 
     def test_machines_section(self):
         """The machine is rendered once, without OData noise."""
@@ -276,3 +277,170 @@ class TestRender:
         assert "related files: unavailable (MS Defender API 403" in self.report
         assert "related ips (1):" in self.report
         assert "related user: none" in self.report
+
+
+GRAPH_INCIDENT = {
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#security/incidents/$entity",
+    "id": "199",
+    "tenantId": "4b0cae28-9de3-4e28-afee-48bb769263ce",
+    "displayName": "A suspicious file was observed",
+    "severity": "medium",
+    "status": "resolved",
+    "classification": "falsePositive",
+    "priorityScore": 55,
+    "incidentWebUrl": "https://security.microsoft.com/incident2/199/overview",
+    "comments": [
+        {
+            "comment": "choco upgrade",
+            "createdByDisplayName": "Admin",
+            "createdDateTime": "2026-10-08T07:00:00Z",
+        }
+    ],
+    "alerts": [
+        {
+            "id": "da1_1",
+            "title": "A suspicious file was observed",
+            "severity": "medium",
+            "createdDateTime": "2026-10-07T16:36:07Z",
+            "firstActivityDateTime": "2026-10-07T16:30:50Z",
+            "lastActivityDateTime": "2026-10-07T16:34:53Z",
+            "alertWebUrl": "https://security.microsoft.com/alerts/da1_1",
+            "tenantId": "4b0cae28-9de3-4e28-afee-48bb769263ce",
+            "evidence": [
+                {
+                    "@odata.type": "#microsoft.graph.security.processEvidence",
+                    "verdict": "suspicious",
+                    "remediationStatus": "active",
+                    "processId": 26596,
+                    "parentProcessId": 23660,
+                    "mdeDeviceId": "mid-1",
+                    "imageFile": {"fileName": "powershell.exe", "sha1": "3e72"},
+                    "parentProcessImageFile": {"fileName": "cmd.exe"},
+                    "userAccount": {"accountName": "jdoe", "domainName": "domain.tld"},
+                },
+                {
+                    "@odata.type": "#microsoft.graph.security.fileEvidence",
+                    "verdict": "suspicious",
+                    "remediationStatus": "active",
+                    "mdeDeviceId": "mid-1",
+                    "fileDetails": {
+                        "fileName": "sync.exe",
+                        "sha1": "4cadd107",
+                        "md5": "f87",
+                    },
+                },
+                {
+                    "@odata.type": "#microsoft.graph.security.deviceEvidence",
+                    "mdeDeviceId": "mid-1",
+                    "deviceDnsName": "q.domain.tld",
+                },
+            ],
+        }
+    ],
+}
+
+
+class TestGraphPath:
+    """Tests for the report built from the Graph incident and Advanced Hunting."""
+
+    def setup_method(self):
+        """Wire a Graph client returning the fixture incident and an empty hunting."""
+        self.client = Mock()
+        self.client.get_machine_by_id.return_value = MACHINE
+        self.graph = Mock()
+        self.graph.get_security_incident.return_value = copy.deepcopy(GRAPH_INCIDENT)
+        self.graph.run_hunting_query.return_value = []
+        self.service = IncidentDetailService(self.client, graph_client=self.graph)
+
+    def test_graph_is_the_source(self):
+        """Graph is read; neither MDE alerts nor related entities are needed."""
+        data = self.service.collect(199)
+
+        assert data["source"] == "graph"
+        assert data["incident"]["displayName"] == "A suspicious file was observed"
+        assert "alerts" not in data["incident"]
+        self.client.get_incident_alerts.assert_not_called()
+        self.client.get_alert_related.assert_not_called()
+
+    def test_graph_evidence_flattened(self):
+        """Graph evidence gets an entityType and its nested details lifted up."""
+        evidence = self.service.collect(199)["alerts"][0]["evidence"]
+
+        process, file, device = evidence
+        assert process["entityType"] == "Process"
+        assert process["fileName"] == "powershell.exe"
+        assert process["parentProcessFileName"] == "cmd.exe"
+        assert process["accountName"] == "jdoe"
+        assert "imageFile" not in process
+        assert file["entityType"] == "File"
+        assert file["md5"] == "f87"
+        assert device["entityType"] == "Device"
+
+    def test_machines_found_through_evidence(self):
+        """Graph alerts carry no machineId: devices come from the evidence."""
+        data = self.service.collect(199)
+
+        assert data["machines"] == {"mid-1": MACHINE}
+
+    def test_timeline_seeded_from_evidence(self):
+        """The timeline window spans the activity widened, seeds are the evidence processes."""
+        self.graph.run_hunting_query.side_effect = lambda query: []
+
+        timeline = self.service.collect(199)["timeline"]
+
+        assert timeline["start"] == "2026-10-07T16:20:50+00:00"
+        assert timeline["end"] == "2026-10-07T16:46:07+00:00"
+        assert timeline["processes"] == ["mid-1:23660", "mid-1:26596"]
+        queries = [call.args[0] for call in self.graph.run_hunting_query.call_args_list]
+        assert any('SHA1 in ("4cadd107")' in q for q in queries)
+
+    def test_timeline_disabled(self):
+        """A zero limit means no timeline at all."""
+        service = IncidentDetailService(
+            self.client, graph_client=self.graph, timeline_limit=0
+        )
+
+        assert service.collect(199)["timeline"] is None
+        self.graph.run_hunting_query.assert_not_called()
+
+    def test_fallback_to_mde_when_graph_refused(self):
+        """A refused Graph incident falls back to the MDE alerts, reason kept."""
+        self.graph.get_security_incident.side_effect = DefenderAPIError("Graph API 403")
+        self.client.get_incident_alerts.return_value = ALERTS
+        self.client.get_alert_related.side_effect = _related
+
+        data = self.service.collect(199)
+        report = self.service.render(data)
+
+        assert data["source"] == "mde"
+        assert data["graphError"] == "Graph API 403"
+        assert "graph: unavailable (Graph API 403)" in report
+        # Advanced Hunting is a separate permission: the timeline is still tried.
+        assert data["timeline"] is not None
+
+    def test_render_graph_report(self):
+        """The Graph report has the incident header, verdicts, alert links and timeline."""
+        report = self.service.render(self.service.collect(199))
+
+        assert "Not covered (no API exposes it): the incident activity log" in report
+        assert "displayName: A suspicious file was observed" in report
+        assert "priorityScore: 55" in report
+        assert "incidentWebUrl: https://security.microsoft.com/incident2/199" in report
+        assert "  - [2026-10-08T07:00:00Z] Admin: choco upgrade" in report
+        assert "tenantId" not in report
+        assert "@odata" not in report
+        assert 'verdicts: {"suspicious/active": 2}' in report
+        assert 'machines: ["q.domain.tld"]' in report
+        assert "firstActivity: 2026-10-07T16:30:50Z" in report
+        assert "alertWebUrl: https://security.microsoft.com/alerts/da1_1" in report
+        assert "TIMELINE (Advanced Hunting)" in report
+
+    def test_render_timeline_error(self):
+        """A timeline that could not be built says why."""
+        data = self.service.collect(199)
+        data["timeline"] = {"error": "no device in the incident"}
+
+        assert (
+            "TIMELINE: unavailable (no device in the incident)"
+            in self.service.render(data)
+        )

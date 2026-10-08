@@ -557,3 +557,43 @@ class TestIncidentDetailCommand:
 
         assert result.exit_code == 3
         assert "UNKNOWN: Config error" in result.output
+
+    @patch("check_msdefender.cli.commands.incident_detail.load_config")
+    @patch("check_msdefender.cli.commands.incident_detail.get_authenticator")
+    @patch("check_msdefender.cli.commands.incident_detail.DefenderClient")
+    @patch("check_msdefender.cli.commands.incident_detail.GraphClient")
+    @patch("check_msdefender.cli.commands.incident_detail.IncidentDetailService")
+    def test_graph_and_timeline_options(
+        self, mock_service, mock_graph, mock_client, mock_auth, mock_config, cli_runner
+    ):
+        """The Graph client and the timeline options reach the service."""
+        mock_config.return_value = configparser.ConfigParser()
+        mock_service.return_value.render.return_value = ""
+
+        result = cli_runner.invoke(
+            main, ["incident-detail", "199", "--window", "30", "--timeline-limit", "50"]
+        )
+
+        assert result.exit_code == 0
+        kwargs = mock_service.call_args.kwargs
+        assert kwargs["graph_client"] is mock_graph.return_value
+        assert kwargs["window_minutes"] == 30
+        assert kwargs["timeline_limit"] == 50
+
+    @patch("check_msdefender.cli.commands.incident_detail.load_config")
+    @patch("check_msdefender.cli.commands.incident_detail.get_authenticator")
+    @patch("check_msdefender.cli.commands.incident_detail.DefenderClient")
+    @patch("check_msdefender.cli.commands.incident_detail.GraphClient")
+    @patch("check_msdefender.cli.commands.incident_detail.IncidentDetailService")
+    def test_no_graph(
+        self, mock_service, mock_graph, mock_client, mock_auth, mock_config, cli_runner
+    ):
+        """--no-graph keeps to the MDE alerts API."""
+        mock_config.return_value = configparser.ConfigParser()
+        mock_service.return_value.render.return_value = ""
+
+        result = cli_runner.invoke(main, ["incident-detail", "199", "--no-graph"])
+
+        assert result.exit_code == 0
+        mock_graph.assert_not_called()
+        assert mock_service.call_args.kwargs["graph_client"] is None
