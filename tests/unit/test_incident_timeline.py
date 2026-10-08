@@ -60,6 +60,11 @@ class TestHelpers:
         moment = parse_time("2026-10-07T16:34:16.5632412Z")
         assert moment == datetime(2026, 10, 7, 16, 34, 16, 563241, tzinfo=timezone.utc)
 
+    def test_parse_time_keeps_offset_and_short_fraction(self):
+        """A non-UTC offset is honoured and a short fraction is padded."""
+        moment = parse_time("2026-10-07T18:34:16.5+02:00")
+        assert moment == datetime(2026, 10, 7, 16, 34, 16, 500000, tzinfo=timezone.utc)
+
     def test_parse_time_rejects_garbage(self):
         """Anything that is not a timestamp gives None."""
         assert parse_time(None) is None

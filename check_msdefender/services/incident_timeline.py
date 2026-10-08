@@ -135,16 +135,17 @@ def _process_keys(pairs: Iterable[tuple[str, int]]) -> list[str]:
     return sorted(f"{device}:{pid}" for device, pid in pairs)
 
 
+# The fractional seconds of a timestamp: the digits right after the seconds' dot.
+_FRACTION_RE = re.compile(r"\.(\d+)")
+
+
 def parse_time(value: Any) -> datetime | None:
     """Parse an API timestamp (ISO 8601, any sub-second precision), or None."""
     if not isinstance(value, str) or not value:
         return None
     text = value.strip().replace("Z", "+00:00")
-    # Python < 3.11 accepts at most 6 fractional digits; the APIs send up to 7.
-    if "." in text:
-        head, _, tail = text.partition(".")
-        digits = "".join(ch for ch in tail if ch.isdigit())
-        text = f"{head}.{digits[:6]}{tail[len(digits) :]}"
+    # Python 3.10 takes exactly 3 or 6 fractional digits; the APIs send 1 to 7.
+    text = _FRACTION_RE.sub(lambda m: "." + m.group(1)[:6].ljust(6, "0"), text, count=1)
     try:
         moment = datetime.fromisoformat(text)
     except ValueError:
