@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Protocol, TypedDict
+from typing import Any, Protocol, TypedDict
 
 # ---------------------------------------------------------------------------
 # TypedDict definitions for Microsoft Defender API JSON responses
@@ -34,6 +34,7 @@ class MachineListResponse(TypedDict):
 class AlertDict(TypedDict, total=False):
     """Single alert object returned by the Defender API."""
 
+    id: str
     machineId: str
     computerDnsName: str
     incidentId: int
@@ -172,6 +173,18 @@ class DefenderClientProtocol(Protocol):
 
     def get_products(self) -> ProductListResponse:
         """Get installed products for a machine."""
+        ...
+
+    def get_incident_alerts(self, incident_id: int) -> AlertListResponse:
+        """Get every alert of an incident, evidence included."""
+        ...
+
+    def get_alert(self, alert_id: str) -> AlertDict:
+        """Get one alert by id, evidence included."""
+        ...
+
+    def get_alert_related(self, alert_id: str, entity: str) -> Any:
+        """Get the entities of one kind related to an alert."""
         ...
 
 

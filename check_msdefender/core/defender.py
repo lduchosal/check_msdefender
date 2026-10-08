@@ -266,6 +266,65 @@ class DefenderClient:
         self.logger.method_exit("get_machine_alerts", result)
         return result
 
+    def get_incident_alerts(self, incident_id: int) -> AlertListResponse:
+        """Get every alert of an incident, evidence included (all pages, any status)."""
+        self.logger.method_entry("get_incident_alerts", incident_id=incident_id)
+        self.logger.info(f"Querying alerts for incident: {incident_id}")
+
+        # No $select: the detail report wants every field the API knows about.
+        url = f"{self.base_url}/api/alerts"
+        params = {
+            PARAM_FILTER: f"incidentId eq {incident_id}",
+            PARAM_EXPAND: "evidence",
+        }
+
+        result: AlertListResponse = {"value": self._fetch_alerts_paginated(url, params)}
+        self.logger.json_response(str(result))
+        self.logger.method_exit("get_incident_alerts", result)
+        return result
+
+    def get_alert(self, alert_id: str) -> AlertDict:
+        """Get one alert by id, evidence included."""
+        self.logger.method_entry("get_alert", alert_id=alert_id)
+
+        token = self._get_token()
+
+        url = f"{self.base_url}/api/alerts/{alert_id}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": DefenderClient.application_json,
+        }
+        params = {PARAM_EXPAND: "evidence"}
+
+        self.logger.info(f"Querying alert: {alert_id}")
+        result = cast(AlertDict, self._get_json(url, headers, params))
+        self.logger.json_response(str(result))
+        self.logger.method_exit("get_alert", result)
+        return result
+
+    def get_alert_related(self, alert_id: str, entity: str) -> Any:
+        """
+        Get the entities related to an alert (``files``, ``user``, ``ips``, ``domains``,
+        ``machine``).
+
+        Collection entities come back as ``{"value": [...]}``, single ones as an object.
+        """
+        self.logger.method_entry("get_alert_related", alert_id=alert_id, entity=entity)
+
+        token = self._get_token()
+
+        url = f"{self.base_url}/api/alerts/{alert_id}/{entity}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": DefenderClient.application_json,
+        }
+
+        self.logger.info(f"Querying {entity} related to alert: {alert_id}")
+        result = self._get_json(url, headers, None)
+        self.logger.json_response(str(result))
+        self.logger.method_exit("get_alert_related", result)
+        return result
+
     def get_products(self) -> ProductListResponse:
         """Get installed products for a machine."""
         self.logger.method_entry("get_products")

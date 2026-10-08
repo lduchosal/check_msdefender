@@ -500,3 +500,60 @@ class TestTimeoutWiring:
 
         assert result.exit_code == 0
         assert mock_client.call_args.kwargs["timeout"] == 30
+
+
+class TestIncidentDetailCommand:
+    """Test incident-detail command functionality."""
+
+    @patch("check_msdefender.cli.commands.incident_detail.load_config")
+    @patch("check_msdefender.cli.commands.incident_detail.get_authenticator")
+    @patch("check_msdefender.cli.commands.incident_detail.DefenderClient")
+    @patch("check_msdefender.cli.commands.incident_detail.IncidentDetailService")
+    def test_report_to_stdout(
+        self, mock_service, mock_client, mock_auth, mock_config, cli_runner
+    ):
+        """The text report goes to stdout by default."""
+        mock_config.return_value = configparser.ConfigParser()
+        service = mock_service.return_value
+        service.resolve_incident_id.return_value = 199
+        service.collect.return_value = {"incidentId": 199}
+        service.render.return_value = "INCIDENT 199\n"
+
+        result = cli_runner.invoke(main, ["incident-detail", "199"])
+
+        assert result.exit_code == 0
+        assert result.output == "INCIDENT 199\n"
+        service.resolve_incident_id.assert_called_once_with("199")
+        service.collect.assert_called_once_with(199)
+
+    @patch("check_msdefender.cli.commands.incident_detail.load_config")
+    @patch("check_msdefender.cli.commands.incident_detail.get_authenticator")
+    @patch("check_msdefender.cli.commands.incident_detail.DefenderClient")
+    @patch("check_msdefender.cli.commands.incident_detail.IncidentDetailService")
+    def test_json_to_file(
+        self, mock_service, mock_client, mock_auth, mock_config, cli_runner, tmp_path
+    ):
+        """--json writes the raw collected data, -o writes it to a file."""
+        mock_config.return_value = configparser.ConfigParser()
+        service = mock_service.return_value
+        service.resolve_incident_id.return_value = 199
+        service.collect.return_value = {"incidentId": 199, "alerts": []}
+        out = tmp_path / "incident.json"
+
+        result = cli_runner.invoke(
+            main, ["incident-detail", "199", "--json", "-o", str(out)]
+        )
+
+        assert result.exit_code == 0
+        assert '"incidentId": 199' in out.read_text(encoding="utf-8")
+        service.render.assert_not_called()
+
+    @patch("check_msdefender.cli.commands.incident_detail.load_config")
+    def test_error_exits_unknown(self, mock_config, cli_runner):
+        """Any failure prints UNKNOWN and exits 3."""
+        mock_config.side_effect = Exception("Config error")
+
+        result = cli_runner.invoke(main, ["incident-detail", "199"])
+
+        assert result.exit_code == 3
+        assert "UNKNOWN: Config error" in result.output

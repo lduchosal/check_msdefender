@@ -127,6 +127,61 @@ class TestGetAlerts:
         assert mock_get.call_count == 2
 
 
+class TestIncidentDetailRequests:
+    """Tests for the requests behind ``incident-detail``."""
+
+    @patch("check_msdefender.core.defender.requests.Session.get")
+    def test_incident_alerts_filter_by_incident_with_evidence(self, mock_get):
+        """Every field is wanted: filter on the incident, expand evidence, no $select."""
+        mock_get.return_value = _ok_response({"value": [{"id": "a1"}]})
+
+        result = _make_client().get_incident_alerts(199)
+
+        assert result == {"value": [{"id": "a1"}]}
+        args, kwargs = mock_get.call_args
+        assert args[0] == "https://api.security.microsoft.com/api/alerts"
+        assert kwargs["params"] == {
+            "$filter": "incidentId eq 199",
+            "$expand": "evidence",
+        }
+
+    @patch("check_msdefender.core.defender.requests.Session.get")
+    def test_incident_alerts_follow_pagination(self, mock_get):
+        """An incident with many alerts is read across every page."""
+        next_link = "https://api.security.microsoft.com/api/alerts?page=2"
+        page1 = _ok_response({"value": [{"id": "a1"}], "@odata.nextLink": next_link})
+        page2 = _ok_response({"value": [{"id": "a2"}]})
+        mock_get.side_effect = [page1, page2]
+
+        result = _make_client().get_incident_alerts(7)
+
+        assert [a["id"] for a in result["value"]] == ["a1", "a2"]
+
+    @patch("check_msdefender.core.defender.requests.Session.get")
+    def test_get_alert_expands_evidence(self, mock_get):
+        """A single alert is fetched by id with its evidence."""
+        mock_get.return_value = _ok_response({"id": "da1_1", "incidentId": 5})
+
+        result = _make_client().get_alert("da1_1")
+
+        assert result["incidentId"] == 5
+        args, kwargs = mock_get.call_args
+        assert args[0] == "https://api.security.microsoft.com/api/alerts/da1_1"
+        assert kwargs["params"] == {"$expand": "evidence"}
+
+    @patch("check_msdefender.core.defender.requests.Session.get")
+    def test_alert_related_url(self, mock_get):
+        """Related entities live under /api/alerts/{id}/<entity>, sent bare."""
+        mock_get.return_value = _ok_response({"value": [{"ipAddress": "1.2.3.4"}]})
+
+        result = _make_client().get_alert_related("da1_1", "ips")
+
+        assert result == {"value": [{"ipAddress": "1.2.3.4"}]}
+        args, kwargs = mock_get.call_args
+        assert args[0] == "https://api.security.microsoft.com/api/alerts/da1_1/ips"
+        assert kwargs["params"] is None
+
+
 class TestDefaultTimeout:
     """Default request timeout (ken #974)."""
 
