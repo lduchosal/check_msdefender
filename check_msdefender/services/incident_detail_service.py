@@ -80,7 +80,7 @@ _NOT_COVERED = (
 
 def _is_empty(value: Any) -> bool:
     """Tell whether an API value carries no information (None, "", [], {})."""
-    return value is None or value == "" or value == [] or value == {}
+    return value is None or value in ("", [], {})
 
 
 def _as_dict(value: Any) -> dict[str, Any] | None:
@@ -174,7 +174,7 @@ class IncidentDetailService:
         alerts = self.defender.get_incident_alerts(incident_id).get("value", [])
         if not alerts:
             raise ValidationError(f"No alert found for incident {incident_id}")
-        alerts = sorted(alerts, key=lambda alert: alert.get("alertCreationTime", ""))
+        alerts.sort(key=lambda alert: alert.get("alertCreationTime", ""))
 
         machine_ids = sorted({mid for a in alerts if (mid := a.get("machineId"))})
         machines = {mid: self._fetch_machine(mid) for mid in machine_ids}

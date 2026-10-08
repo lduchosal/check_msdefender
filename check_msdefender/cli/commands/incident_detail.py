@@ -36,8 +36,8 @@ def register_incident_detail_commands(main_group: Any) -> None:
         as_json: bool,
     ) -> None:
         """
-        Dump every detail of an incident (alerts, evidence, processes, users, files, IPs...) as
-        text for analysis.
+        Dump every detail of an incident (alerts, evidence, processes, users, files, IPs...) as text
+        for analysis.
 
         REFERENCE is an incident id (integer) or the id of any alert of the incident. Resolved
         incidents are reported too.
