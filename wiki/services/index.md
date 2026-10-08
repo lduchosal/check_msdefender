@@ -2,9 +2,10 @@
 
 Section: `services`
 
-## En cours (1)
+## En cours (2)
 
 - [INCIDENT / Détail d'un incident](incident-detail-d-un-incident-1149.md) — _review_
+- [INCIDENT / incident-detail via Graph + chronologie Advanced Hunting](incident-incident-detail-via-graph-chronologie-advanced-hunting-1150.md) — _review_
 
 ## Archivé (1)
 
