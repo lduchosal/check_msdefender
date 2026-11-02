@@ -496,6 +496,48 @@ pip install dist/*.whl
 python -m twine upload dist/*
 ```
 
+### Task tracking (kenboard)
+
+Work is tracked on kenboard with the `ken` CLI (`.venv/bin/ken`, auth from the
+gitignored `.ken`). Task flow: todo → doing → review → done; only the user asks
+for done.
+
+```sh
+ken list --who Claude --status todo --json     # pull assigned work
+ken show <id> --json                            # read full task
+ken add "MODULE / Titre" --desc-file body.md --who Claude --status todo
+ken move <id> --to doing|review
+```
+
+Titles must not contain `<` or `>`: the board rejects them with a bare
+`HTTP 422 Validation error` (write `1.14.2+`, not `>= 1.14.2`).
+
+### Closing ceremony
+
+When a task is finished, the user asks for it in these words — *« ken done, ken
+tldr, commit, groom, wiki, publish »* (or just *« cloture »*). The steps, in order:
+
+| Step | What it means |
+|---|---|
+| **ken done** | `ken done <id>`. This is the one moment the rule *« never move to done yourself »* is lifted: the user is asking for it. If real leftovers remain, open a **follow-up task** for them rather than leaving the finished one open. |
+| **ken tldr** | Rewrite the task description with a **TL;DR** on top (problem → action), then the detail below: what was done, which commits / released version, what was found, what is explicitly *not* done. The board is the audit trail — commit messages alone are not enough. Use `--desc-file`, never `--desc "…\n…"` (the `\n` stays literal and wrecks the markdown). |
+| **commit** | Everything still pending in the working tree (`git status`), as a conventional commit referencing the task (`fix(scope): … #<id>`). Often a no-op because the work was committed as it went; say so rather than staying silent. |
+| **groom** | `ken wiki groom <id> <section>` (sections from `ARCHITECTURE.md`: `cli`, `core`, `services`, `quality`). `ken wiki groom` with no arguments lists what is still unclassified — the pre-flight. Only classified tasks reach the wiki. |
+| **wiki** | `ken wiki sync` exports the classified tasks to `wiki/` (versioned), then commit it as `docs(wiki): export kenboard wiki after closing #<id>`. `ken wiki build` renders `wiki-html/` locally (gitignored). |
+| **publish** | `./publish.sh`: pull --rebase, full quality gate, integration tests, SonarCloud gate, version bump, PyPI upload, `chore: release version X.Y.Z` commit, tag and push. Needs a clean tree — hence commit and wiki first. |
+
+```sh
+ken done <id>
+ken update <id> --desc-file /tmp/ken-<id>.md   # TL;DR + detail
+git status                                      # nothing left behind?
+ken wiki groom <id> <section>
+ken wiki sync && git add wiki && git commit -m "docs(wiki): export kenboard wiki after closing #<id>"
+./publish.sh                                    # release to PyPI, tag, push
+```
+
+After `publish.sh`, check that `msal` is still >= 1.37 in `.venv`: `pdm update`
+re-locks it to an older version.
+
 ## 🔍 Output Examples
 
 ### Successful Check
