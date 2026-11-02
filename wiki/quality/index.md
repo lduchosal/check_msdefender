@@ -2,7 +2,7 @@
 
 Section: `quality`
 
-## Archivé (6)
+## Archivé (7)
 
 - [QUALITY / copier publish du projet kenboard](quality-copier-publish-du-projet-kenboard-912.md)
 - [QUALITY / quality_metrics: modèles typés sérialisables](quality-quality-metrics-modeles-types-serialisables-913.md)
@@ -10,3 +10,4 @@ Section: `quality`
 - [Fix 11 open SonarCloud code smells](fix-11-open-sonarcloud-code-smells-920.md)
 - [CI / Publish Package: ReadTimeout sur vulnerabilities — le ini généré force timeout = 10](ci-publish-package-readtimeout-sur-vulnerabilities-le-ini-genere-force-timeout-10-1008.md)
 - [SONARCLOUD / 3 new issues](sonarcloud-3-new-issues-1103.md)
+- [SEC / Bump gh-action-pypi-publish to 1.14.2+ (emSign CA)](sec-bump-gh-action-pypi-publish-to-1-14-2-emsign-ca-1168.md)
